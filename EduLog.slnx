@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="EduLog.Core/EduLog.Core.csproj" />
+  <Project Path="EduLog.Data/EduLog.Data.csproj" />
+  <Project Path="EduLog.Services/EduLog.Services.csproj" />
+  <Project Path="EduLog.Web/EduLog.Web.csproj" />
+</Solution>

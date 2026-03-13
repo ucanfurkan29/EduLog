@@ -1,0 +1,54 @@
+@model EduLog.Web.ViewModels.QuizResultViewModel
+@{
+    ViewData["Title"] = "Quiz Sonucu";
+    Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body p-5">
+                @{
+                    double percentage = Model.MaxScore > 0 ? (double)Model.Score / Model.MaxScore * 100 : 0;
+                    string icon = percentage >= 70 ? "bi-emoji-smile text-success" :
+                                  percentage >= 50 ? "bi-emoji-neutral text-warning" :
+                                  "bi-emoji-frown text-danger";
+                }
+                <i class="bi @icon" style="font-size: 4rem;"></i>
+                <h3 class="fw-bold mt-3 mb-2">Quiz Tamamlandı!</h3>
+                <p class="text-muted mb-4">@Model.AssignmentTitle</p>
+
+                <div class="card bg-light border-0 mb-4 mx-auto" style="max-width: 450px;">
+                    <div class="card-body p-4">
+                        <div class="row text-center">
+                            <div class="col-6 border-end">
+                                <p class="small text-muted mb-1">Puanınız</p>
+                                <p class="fs-1 fw-bold text-primary mb-0">@Model.Score</p>
+                                <p class="small text-muted">/ @Model.MaxScore</p>
+                            </div>
+                            <div class="col-6">
+                                <p class="small text-muted mb-1">Doğru Cevap</p>
+                                <p class="fs-1 fw-bold text-success mb-0">@Model.CorrectCount</p>
+                                <p class="small text-muted">/ @Model.TotalCount soru</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="progress" style="height: 12px;">
+                        <div class="progress-bar @(percentage >= 70 ? "bg-success" : percentage >= 50 ? "bg-warning" : "bg-danger")"
+                             role="progressbar" style="width: @percentage%">
+                        </div>
+                    </div>
+                    <p class="small text-muted mt-1">%@((int)percentage) başarı oranı</p>
+                </div>
+
+                <a asp-controller="StudentDashboard" asp-action="ClassDetail" asp-route-id="@Model.ClassGroupId"
+                   class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i> Sınıfa Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

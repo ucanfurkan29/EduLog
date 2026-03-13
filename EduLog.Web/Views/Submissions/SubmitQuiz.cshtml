@@ -1,0 +1,61 @@
+@model EduLog.Web.ViewModels.SubmitQuizViewModel
+@{
+    ViewData["Title"] = "Quiz — " + Model.AssignmentTitle;
+    Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-ui-checks me-2"></i> @Model.AssignmentTitle
+        </h3>
+        <p class="text-muted mb-0">@Model.Questions.Count soru · Maksimum Puan: <strong>@Model.MaxScore</strong></p>
+    </div>
+</div>
+
+<form asp-action="SubmitQuiz" method="post">
+    <input type="hidden" asp-for="AssignmentId" />
+    <input type="hidden" asp-for="ClassGroupId" />
+
+    @for (int i = 0; i < Model.Questions.Count; i++)
+    {
+        var q = Model.Questions[i];
+        <input type="hidden" name="Questions[@i].Id" value="@q.Id" />
+        <input type="hidden" name="Questions[@i].QuestionText" value="@q.QuestionText" />
+        <input type="hidden" name="Questions[@i].OptionA" value="@q.OptionA" />
+        <input type="hidden" name="Questions[@i].OptionB" value="@q.OptionB" />
+        <input type="hidden" name="Questions[@i].OptionC" value="@q.OptionC" />
+        <input type="hidden" name="Questions[@i].OptionD" value="@q.OptionD" />
+        <input type="hidden" name="Questions[@i].OrderIndex" value="@q.OrderIndex" />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white py-3 px-4">
+                <h6 class="fw-bold mb-0">
+                    <span class="badge bg-primary me-2">@(i + 1)</span>
+                    @q.QuestionText
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var opt in new[] { ("A", q.OptionA), ("B", q.OptionB), ("C", q.OptionC), ("D", q.OptionD) })
+                    {
+                        <div class="form-check p-3 border rounded">
+                            <input class="form-check-input" type="radio" name="Answers[@i]" value="@opt.Item1"
+                                   id="q@(i)_@opt.Item1" />
+                            <label class="form-check-label w-100" for="q@(i)_@opt.Item1">
+                                <strong>@opt.Item1)</strong> @opt.Item2
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-success btn-lg"
+                onclick="return confirm('Cevaplarınızı göndermek istediğinize emin misiniz?');">
+            <i class="bi bi-send me-1"></i> Teslim Et
+        </button>
+    </div>
+</form>

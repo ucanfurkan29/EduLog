@@ -1,0 +1,231 @@
+@model EduLog.Web.ViewModels.SyllabusWeekDetailViewModel
+@{
+    ViewData["Title"] = $"Hafta {Model.Week.WeekNumber} — {Model.Week.Topic}";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
+        <li class="breadcrumb-item">@Model.CourseName</li>
+        <li class="breadcrumb-item"><a asp-controller="SyllabusWeeks" asp-action="Index" asp-route-syllabusId="@Model.SyllabusId">@Model.SyllabusTitle</a></li>
+        <li class="breadcrumb-item active">Hafta @Model.Week.WeekNumber</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <!-- Sol: Hafta bilgileri -->
+    <div class="col-lg-7 mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                <h4 class="fw-bold mb-0">
+                    <span class="badge bg-primary me-2">Hafta @Model.Week.WeekNumber</span>
+                    @Model.Week.Topic
+                </h4>
+                <a asp-action="Edit" asp-route-id="@Model.Week.Id" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-pencil me-1"></i> Düzenle
+                </a>
+            </div>
+            <div class="card-body p-4">
+                @if (!string.IsNullOrEmpty(Model.Week.Examples))
+                {
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-muted">
+                            <i class="bi bi-lightbulb me-1"></i> Örnekler
+                        </h6>
+                        <div class="bg-light rounded p-3">
+                            <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">@Model.Week.Examples</pre>
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Week.Notes))
+                {
+                    <div class="mb-3">
+                        <h6 class="fw-bold text-muted">
+                            <i class="bi bi-sticky me-1"></i> Notlar
+                        </h6>
+                        <div class="bg-light rounded p-3">
+                            <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">@Model.Week.Notes</pre>
+                        </div>
+                    </div>
+                }
+                @if (string.IsNullOrEmpty(Model.Week.Examples) && string.IsNullOrEmpty(Model.Week.Notes))
+                {
+                    <p class="text-muted">Bu hafta için henüz örnek veya not eklenmemiş.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Sağ: Dosya yükleme ve listeleme -->
+    <div class="col-lg-5 mb-4">
+        <!-- Dosya Yükleme -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 px-4">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-cloud-upload me-2"></i> Dosya Yükle
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="UploadFile" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="SyllabusWeekId" value="@Model.Week.Id" />
+                    <input type="hidden" name="SyllabusId" value="@Model.SyllabusId" />
+
+                    <div class="mb-3">
+                        <input type="file" name="File" class="form-control" accept=".pdf,.zip,.cs,.py,.txt,.md" />
+                        <div class="form-text">
+                            İzin verilen: PDF, ZIP, CS, PY, TXT, MD — Maks. 20 MB
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-upload me-1"></i> Yükle
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dosya Listesi -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 px-4">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-folder me-2"></i> Dosyalar (@Model.Resources.Count())
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.Resources.Any())
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-folder2-open text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted small mt-2">Henüz dosya yüklenmemiş.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var resource in Model.Resources)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-4 py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    @{
+                                        var icon = resource.ResourceType switch
+                                        {
+                                            "pdf" => "bi-file-earmark-pdf text-danger",
+                                            "zip" => "bi-file-earmark-zip text-warning",
+                                            "cs" => "bi-file-earmark-code text-success",
+                                            "py" => "bi-file-earmark-code text-info",
+                                            "txt" => "bi-file-earmark-text text-secondary",
+                                            "md" => "bi-file-earmark-richtext text-primary",
+                                            _ => "bi-file-earmark text-muted"
+                                        };
+                                    }
+                                    <i class="bi @icon fs-5"></i>
+                                    <div>
+                                        <a href="@resource.FilePath" target="_blank" class="text-decoration-none fw-semibold">
+                                            @resource.FileName
+                                        </a>
+                                        <br />
+                                        <small class="text-muted text-uppercase">@resource.ResourceType</small>
+                                    </div>
+                                </div>
+                                <form asp-action="DeleteFile" method="post"
+                                      onsubmit="return confirm('Bu dosyayı silmek istediğinize emin misiniz?');">
+                                    <input type="hidden" name="id" value="@resource.Id" />
+                                    <input type="hidden" name="weekId" value="@Model.Week.Id" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ödevler Bölümü -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+            <i class="bi bi-pencil-square me-2"></i> Ödevler (@Model.Assignments.Count())
+        </h5>
+        <div class="d-flex gap-2">
+            <a asp-controller="Assignments" asp-action="Create" asp-route-syllabusWeekId="@Model.Week.Id"
+               class="btn btn-primary btn-sm">
+                <i class="bi bi-plus me-1"></i> Ödev Ekle
+            </a>
+            <form asp-controller="Assignments" asp-action="GenerateAI" method="post" class="d-inline">
+                <input type="hidden" name="syllabusWeekId" value="@Model.Week.Id" />
+                <button type="submit" class="btn btn-outline-info btn-sm">
+                    <i class="bi bi-robot me-1"></i> AI ile Ödev Üret
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.Assignments.Any())
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-clipboard-check text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-2">Henüz ödev eklenmemiş.</p>
+            </div>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var assignment in Model.Assignments)
+                {
+                    <div class="list-group-item px-4 py-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="fw-bold mb-1">
+                                    @assignment.Title
+                                    @if (assignment.IsAIGenerated)
+                                    {
+                                        <span class="badge bg-info ms-1" title="AI ile üretildi">
+                                            <i class="bi bi-robot"></i> AI
+                                        </span>
+                                    }
+                                </h6>
+                                @if (!string.IsNullOrWhiteSpace(assignment.Description))
+                                {
+                                    <p class="text-muted small mb-1">@assignment.Description</p>
+                                }
+                                <div class="d-flex gap-3 text-muted small">
+                                    <span>
+                                        <i class="bi bi-star me-1"></i> Maks: @assignment.MaxScore puan
+                                    </span>
+                                    @if (assignment.DueDate.HasValue)
+                                    {
+                                        <span>
+                                            <i class="bi bi-clock me-1"></i> Son: @assignment.DueDate.Value.ToString("dd.MM.yyyy HH:mm")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge @(assignment.Type == "CodeTask" ? "bg-warning" : "bg-info")">
+                                    @(assignment.Type == "CodeTask" ? "Kodlama" : "Çoktan Seçmeli")
+                                </span>
+                                <a asp-controller="Assignments" asp-action="Edit" asp-route-id="@assignment.Id"
+                                   class="btn btn-outline-primary btn-sm" title="Düzenle">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-controller="Assignments" asp-action="Delete" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bu ödevi silmek istediğinize emin misiniz?');">
+                                    <input type="hidden" name="id" value="@assignment.Id" />
+                                    <input type="hidden" name="syllabusWeekId" value="@Model.Week.Id" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Sil">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

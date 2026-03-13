@@ -1,0 +1,63 @@
+@model EduLog.Web.ViewModels.CreateSyllabusWeekViewModel
+@{
+    ViewData["Title"] = "Hafta Ekle";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
+        <li class="breadcrumb-item">@Model.CourseName</li>
+        <li class="breadcrumb-item"><a asp-controller="SyllabusWeeks" asp-action="Index" asp-route-syllabusId="@Model.SyllabusId">@Model.SyllabusTitle</a></li>
+        <li class="breadcrumb-item active">Yeni Hafta</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-4">
+                    <i class="bi bi-plus-circle me-2"></i> Hafta Ekle — @Model.SyllabusTitle
+                </h4>
+
+                <form asp-action="Create" method="post">
+                    <input asp-for="SyllabusId" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="WeekNumber" class="form-label fw-semibold"></label>
+                            <input asp-for="WeekNumber" class="form-control" type="number" min="1" max="52" />
+                            <span asp-validation-for="WeekNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label asp-for="Topic" class="form-label fw-semibold"></label>
+                            <input asp-for="Topic" class="form-control" placeholder="Örn: Değişkenler ve Veri Tipleri" />
+                            <span asp-validation-for="Topic" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Examples" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Examples" class="form-control" rows="4" placeholder="Bu haftanın örnekleri..."></textarea>
+                        <span asp-validation-for="Examples" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Notes" class="form-label fw-semibold"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="4" placeholder="Ek notlar..."></textarea>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Ekle
+                        </button>
+                        <a asp-action="Index" asp-route-syllabusId="@Model.SyllabusId" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

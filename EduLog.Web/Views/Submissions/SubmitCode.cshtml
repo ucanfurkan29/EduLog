@@ -1,0 +1,60 @@
+@model EduLog.Web.ViewModels.SubmitCodeViewModel
+@{
+    ViewData["Title"] = "Kod Teslimi — " + Model.AssignmentTitle;
+    Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-code-slash me-2"></i> @Model.AssignmentTitle
+        </h3>
+        <p class="text-muted mb-0">Maksimum Puan: <strong>@Model.MaxScore</strong></p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.AssignmentDescription))
+{
+    <div class="alert alert-secondary">
+        <i class="bi bi-info-circle me-1"></i> @Model.AssignmentDescription
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 px-4">
+        <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-code me-2"></i> Kodunuzu Yazın</h5>
+    </div>
+    <div class="card-body p-4">
+        <form asp-action="SubmitCode" method="post">
+            <input type="hidden" asp-for="AssignmentId" />
+            <input type="hidden" asp-for="ClassGroupId" />
+
+            <div class="mb-4">
+                <textarea asp-for="Content" class="form-control" rows="18"
+                          style="font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; background-color: #1e1e1e; color: #d4d4d4; tab-size: 4;"
+                          placeholder="// Kodunuzu buraya yazın..."></textarea>
+                <span asp-validation-for="Content" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-send me-1"></i> Teslim Et
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Tab key support in textarea
+        document.querySelector('textarea[name="Content"]').addEventListener('keydown', function (e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                var start = this.selectionStart;
+                var end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+    </script>
+}

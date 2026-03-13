@@ -1,0 +1,175 @@
+@model EduLog.Web.ViewModels.StudentWeekDetailViewModel
+@{
+    ViewData["Title"] = "Hafta " + Model.WeekNumber + " — " + Model.Topic;
+    Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-journal-text me-2"></i> Hafta @Model.WeekNumber: @Model.Topic
+        </h3>
+        <p class="text-muted mb-0">@Model.CourseName — @Model.ClassName</p>
+    </div>
+    <a asp-action="ClassDetail" asp-route-id="@Model.ClassGroupId" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Haftalara Dön
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Notes Section -->
+    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+    {
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-sticky me-2"></i> Notlar</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0" style="white-space: pre-line;">@Model.Notes</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Examples Section -->
+    @if (!string.IsNullOrWhiteSpace(Model.Examples))
+    {
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-code-slash me-2"></i> Örnekler</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-light p-3 rounded mb-0"><code>@Model.Examples</code></pre>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Resources Section -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark me-2"></i> Dosyalar</h5>
+            </div>
+            <div class="card-body">
+                @if (!Model.Resources.Any())
+                {
+                    <p class="text-muted mb-0">Bu hafta için dosya yok.</p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var resource in Model.Resources)
+                        {
+                            <a href="@resource.FilePath" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
+                                <i class="bi bi-file-earmark-arrow-down text-primary"></i>
+                                <span>@resource.FileName</span>
+                                <span class="badge bg-secondary ms-auto">@resource.ResourceType</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments Section -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-pencil-square me-2"></i> Ödevler</h5>
+            </div>
+            <div class="card-body">
+                @if (!Model.Assignments.Any())
+                {
+                    <p class="text-muted mb-0">Bu hafta için ödev yok.</p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var assignment in Model.Assignments)
+                        {
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">@assignment.Title</h6>
+                                        @if (!string.IsNullOrWhiteSpace(assignment.Description))
+                                        {
+                                            <p class="text-muted small mb-1">@assignment.Description</p>
+                                        }
+                                    </div>
+                                    <span class="badge @(assignment.Type == "CodeTask" ? "bg-warning" : "bg-info") ms-2">
+                                        @(assignment.Type == "CodeTask" ? "Kodlama" : "Çoktan Seçmeli")
+                                    </span>
+                                </div>
+                                <div class="d-flex gap-3 text-muted small mt-1 mb-2">
+                                    <span><i class="bi bi-star me-1"></i> Maks: @assignment.MaxScore puan</span>
+                                    @if (assignment.DueDate.HasValue)
+                                    {
+                                        <span><i class="bi bi-clock me-1"></i> Son: @assignment.DueDate.Value.ToString("dd.MM.yyyy")</span>
+                                    }
+                                </div>
+
+                                @if (assignment.HasSubmission)
+                                {
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (assignment.Score.HasValue)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i> Puan: @assignment.Score / @assignment.MaxScore
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-hourglass-split me-1"></i> Değerlendirme bekleniyor
+                                            </span>
+                                        }
+
+                                        @if (assignment.Type == "CodeTask")
+                                        {
+                                            <a asp-controller="Submissions" asp-action="SubmitCode"
+                                               asp-route-assignmentId="@assignment.Id" asp-route-classGroupId="@Model.ClassGroupId"
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye me-1"></i> Teslimi Gör
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Submissions" asp-action="SubmitQuiz"
+                                               asp-route-assignmentId="@assignment.Id" asp-route-classGroupId="@Model.ClassGroupId"
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye me-1"></i> Sonucu Gör
+                                            </a>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    @if (assignment.Type == "CodeTask")
+                                    {
+                                        <a asp-controller="Submissions" asp-action="SubmitCode"
+                                           asp-route-assignmentId="@assignment.Id" asp-route-classGroupId="@Model.ClassGroupId"
+                                           class="btn btn-success btn-sm">
+                                            <i class="bi bi-send me-1"></i> Teslim Et
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Submissions" asp-action="SubmitQuiz"
+                                           asp-route-assignmentId="@assignment.Id" asp-route-classGroupId="@Model.ClassGroupId"
+                                           class="btn btn-success btn-sm">
+                                            <i class="bi bi-send me-1"></i> Quiz'e Başla
+                                        </a>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

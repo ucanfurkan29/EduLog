@@ -1,0 +1,230 @@
+@model EduLog.Web.ViewModels.ClassGroupDetailViewModel
+@{
+    ViewData["Title"] = Model.Name + " — Sınıf Detayı";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-people me-2"></i> @Model.Name
+        </h3>
+        <p class="text-muted mb-0">@Model.CourseName — @Model.SyllabusTitle</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Sınıflara Dön
+    </a>
+</div>
+
+<!-- JoinCode Card -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+                <p class="text-muted small mb-2">Sınıf Katılım Kodu</p>
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                    <span id="joinCodeText" class="font-monospace fw-bold text-dark" style="font-size: 2.5rem; letter-spacing: 6px;">@Model.JoinCode</span>
+                </div>
+                <button class="btn btn-outline-primary btn-sm mt-3" onclick="copyJoinCode()">
+                    <i class="bi bi-clipboard me-1"></i> Kopyala
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Week Panel -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+                <p class="text-muted small mb-2">Hafta Durumu</p>
+                <div class="mb-2">
+                    <span class="fs-1 fw-bold text-primary">@Model.CurrentWeek</span>
+                    <span class="text-muted fs-5"> / @Model.MaxWeek</span>
+                </div>
+                @if (Model.CurrentWeek < Model.MaxWeek)
+                {
+                    <form asp-action="AdvanceWeek" asp-route-id="@Model.Id" method="post">
+                        <button type="submit" class="btn btn-success btn-sm"
+                                onclick="return confirm('Hafta @(Model.CurrentWeek + 1) açılacak. Devam etmek istiyor musunuz?');">
+                            <i class="bi bi-unlock me-1"></i> Sonraki Haftayı Aç
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <span class="badge bg-success px-3 py-2">
+                        <i class="bi bi-check-circle me-1"></i> Tüm Haftalar Açık
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Count -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+                <p class="text-muted small mb-2">Kayıtlı Öğrenci</p>
+                <span class="fs-1 fw-bold text-info">@Model.Students.Count</span>
+                <p class="text-muted small mt-1">öğrenci</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs: Öğrenciler / Teslimler -->
+<ul class="nav nav-tabs mb-0" id="classDetailTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#studentsPane" type="button" role="tab">
+            <i class="bi bi-person-lines-fill me-1"></i> Öğrenci Listesi (@Model.Students.Count)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="submissions-tab" data-bs-toggle="tab" data-bs-target="#submissionsPane" type="button" role="tab">
+            <i class="bi bi-inbox me-1"></i> Teslimler (@Model.Submissions.Count)
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Öğrenci Listesi Tab -->
+    <div class="tab-pane fade show active" id="studentsPane" role="tabpanel">
+        <div class="card border-0 shadow-sm border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+            <div class="card-body p-0">
+                @if (!Model.Students.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-person-x text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Henüz kayıtlı öğrenci yok.</p>
+                        <p class="text-muted small">Öğrenciler <strong>@Model.JoinCode</strong> kodu ile kayıt olabilir.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">#</th>
+                                    <th>Ad Soyad</th>
+                                    <th>E-posta</th>
+                                    <th>Katılım Tarihi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ int index = 1; }
+                                @foreach (var student in Model.Students)
+                                {
+                                    <tr>
+                                        <td class="ps-4">@index</td>
+                                        <td class="fw-semibold">@student.FullName</td>
+                                        <td class="text-muted">@student.Email</td>
+                                        <td class="text-muted">@student.JoinedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                    </tr>
+                                    index++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Teslimler Tab -->
+    <div class="tab-pane fade" id="submissionsPane" role="tabpanel">
+        <div class="card border-0 shadow-sm border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+            <div class="card-body p-0">
+                @if (!Model.Submissions.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Henüz teslim yapılmamış.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Öğrenci</th>
+                                    <th>Ödev</th>
+                                    <th>Tür</th>
+                                    <th>İçerik</th>
+                                    <th>Teslim Zamanı</th>
+                                    <th>Puan</th>
+                                    <th>İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var sub in Model.Submissions)
+                                {
+                                    <tr>
+                                        <td class="ps-4 fw-semibold">@sub.StudentName</td>
+                                        <td>@sub.AssignmentTitle</td>
+                                        <td>
+                                            <span class="badge @(sub.AssignmentType == "CodeTask" ? "bg-warning" : "bg-info")">
+                                                @(sub.AssignmentType == "CodeTask" ? "Kodlama" : "Quiz")
+                                            </span>
+                                        </td>
+                                        <td class="text-muted small" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            @sub.ContentPreview
+                                        </td>
+                                        <td class="text-muted">@sub.SubmittedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                        <td>
+                                            @if (sub.Score.HasValue)
+                                            {
+                                                <span class="badge bg-success">@sub.Score / @sub.MaxScore</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Bekliyor</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (sub.AssignmentType == "CodeTask" && !sub.Score.HasValue)
+                                            {
+                                                <a asp-action="GradeSubmission" asp-route-id="@sub.Id"
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="bi bi-pencil me-1"></i> Puanla
+                                                </a>
+                                            }
+                                            else if (sub.AssignmentType == "CodeTask" && sub.Score.HasValue)
+                                            {
+                                                <a asp-action="GradeSubmission" asp-route-id="@sub.Id"
+                                                   class="btn btn-outline-secondary btn-sm">
+                                                    <i class="bi bi-pencil me-1"></i> Düzenle
+                                                </a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyJoinCode() {
+            var code = document.getElementById('joinCodeText').textContent.trim();
+            navigator.clipboard.writeText(code).then(function () {
+                var btn = event.target.closest('button');
+                var originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Kopyalandı!';
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-success');
+                setTimeout(function () {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-primary');
+                }, 2000);
+            });
+        }
+    </script>
+}

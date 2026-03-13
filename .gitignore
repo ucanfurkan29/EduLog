@@ -1,0 +1,84 @@
+## .NET / ASP.NET Core
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+*.pyc
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# Visual Studio
+.vs/
+.vscode/
+*.vcxproj.filters
+*.pidb
+*.svclog
+*.scc
+
+# Paket değil
+*.nupkg
+*.snupkg
+
+# Rider IDE
+.idea/
+*.sln.iml
+
+# NuGet
+.nuget/packages/*
+!.nuget/packages/repositories.config
+*.nuget.props
+*.nuget.targets
+nuget.exe
+
+# dotCover
+*.dotCover
+
+# Publish
+[Pp]ublist/
+[Pp]ublish/
+
+# ASP.NET Core appsettings (gizli bilgiler içerebilir)
+# appsettings.json dahil edilir (API key placeholder içerir)
+# Gerçek anahtarları ayrı bir ortam değişkeni veya secrets.json ile yönetin
+appsettings.Production.json
+appsettings.Staging.json
+
+# User secrets
+secrets.json
+
+# Dosya yüklemeleri (wwwroot/uploads - büyük boyutlu olabilir)
+EduLog.Web/wwwroot/uploads/*
+!EduLog.Web/wwwroot/uploads/.gitkeep
+
+# Migration snapshots (isteğe göre kaldırabilirsiniz)
+# EduLog.Data/Migrations/
+
+# Logs
+*.log
+logs/
+
+# Test results
+TestResults/
+
+# dotnet tool manifests
+.config/
+
+# Thumbs
+Thumbs.db

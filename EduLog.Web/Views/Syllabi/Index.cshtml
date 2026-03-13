@@ -1,0 +1,84 @@
+@model IEnumerable<EduLog.Core.Entities.Syllabus>
+@{
+    var course = (EduLog.Core.Entities.Course)ViewBag.Course;
+    ViewData["Title"] = $"{course.Name} — Müfredatlar";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
+        <li class="breadcrumb-item active">@course.Name</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">
+        <i class="bi bi-journal-text me-2"></i> @course.Name — Müfredatlar
+    </h3>
+    <a asp-action="Create" asp-route-courseId="@course.Id" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Yeni Müfredat
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-journal-text text-muted" style="font-size: 4rem;"></i>
+        <p class="text-muted mt-3 fs-5">Bu derse henüz müfredat eklenmemiş.</p>
+        <a asp-action="Create" asp-route-courseId="@course.Id" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> İlk Müfredatı Oluşturun
+        </a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var syllabus in Model)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="rounded-circle bg-info bg-opacity-10 d-inline-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                <i class="bi bi-journal-text text-info fs-5"></i>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" asp-action="Edit" asp-route-id="@syllabus.Id">
+                                            <i class="bi bi-pencil me-2"></i> Düzenle
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form asp-action="Delete" asp-route-id="@syllabus.Id" method="post"
+                                              onsubmit="return confirm('Bu müfredatı silmek istediğinize emin misiniz?');">
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-trash me-2"></i> Sil
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <h5 class="fw-bold mb-1">@syllabus.Title</h5>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-calendar3 me-1"></i> @syllabus.CreatedAt.ToString("dd.MM.yyyy")
+                        </p>
+                        <div class="d-flex gap-3 text-muted small mb-3">
+                            <span><i class="bi bi-calendar-week me-1"></i> @syllabus.Weeks.Count hafta</span>
+                        </div>
+                        <a asp-controller="SyllabusWeeks" asp-action="Index" asp-route-syllabusId="@syllabus.Id"
+                           class="btn btn-outline-info btn-sm w-100">
+                            <i class="bi bi-calendar-week me-1"></i> Haftalara Git
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

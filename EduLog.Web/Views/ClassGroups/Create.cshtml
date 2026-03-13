@@ -1,0 +1,86 @@
+@model EduLog.Web.ViewModels.CreateClassGroupViewModel
+@{
+    ViewData["Title"] = "Yeni Sınıf Oluştur";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-4">
+                    <i class="bi bi-plus-circle me-2"></i> Yeni Sınıf Oluştur
+                </h4>
+
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label fw-semibold"></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-pencil"></i></span>
+                            <input asp-for="Name" class="form-control" placeholder="Örn: Python 101 - Grup A" />
+                        </div>
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="CourseId" class="form-label fw-semibold"></label>
+                        <select asp-for="CourseId" asp-items="Model.Courses" class="form-select" id="courseSelect">
+                            <option value="">-- Ders Seçin --</option>
+                        </select>
+                        <span asp-validation-for="CourseId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="SyllabusId" class="form-label fw-semibold"></label>
+                        <select asp-for="SyllabusId" asp-items="Model.Syllabi" class="form-select" id="syllabusSelect">
+                            <option value="">-- Önce ders seçin --</option>
+                        </select>
+                        <span asp-validation-for="SyllabusId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i> Oluştur
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Geri
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('courseSelect').addEventListener('change', function () {
+            var courseId = this.value;
+            var syllabusSelect = document.getElementById('syllabusSelect');
+            syllabusSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+
+            if (!courseId) {
+                syllabusSelect.innerHTML = '<option value="">-- Önce ders seçin --</option>';
+                return;
+            }
+
+            fetch('/ClassGroups/GetSyllabiForCourse?courseId=' + courseId)
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    syllabusSelect.innerHTML = '<option value="">-- Müfredat Seçin --</option>';
+                    data.forEach(function (item) {
+                        var option = document.createElement('option');
+                        option.value = item.value;
+                        option.textContent = item.text;
+                        syllabusSelect.appendChild(option);
+                    });
+                })
+                .catch(function () {
+                    syllabusSelect.innerHTML = '<option value="">Müfredat yüklenemedi</option>';
+                });
+        });
+    </script>
+}

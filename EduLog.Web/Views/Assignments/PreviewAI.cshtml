@@ -1,0 +1,114 @@
+@model EduLog.Web.ViewModels.AIPreviewViewModel
+@{
+    ViewData["Title"] = "AI Önizleme — Soruları İncele";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
+        <li class="breadcrumb-item">@Model.CourseName</li>
+        <li class="breadcrumb-item"><a asp-controller="SyllabusWeeks" asp-action="Detail" asp-route-id="@Model.SyllabusWeekId">Hafta @Model.WeekNumber</a></li>
+        <li class="breadcrumb-item active">AI Önizleme</li>
+    </ol>
+</nav>
+
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="bi bi-robot me-2 fs-5"></i>
+    <span>Aşağıdaki sorular <strong>AI (Claude)</strong> tarafından üretilmiştir. İnceleyip düzenledikten sonra onaylayarak kaydedebilirsiniz.</span>
+</div>
+
+<form asp-action="SaveAI" asp-controller="Assignments" method="post">
+    <input type="hidden" asp-for="SyllabusWeekId" />
+    <input type="hidden" asp-for="SyllabusId" />
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 px-4">
+            <h4 class="fw-bold mb-0"><i class="bi bi-gear me-2"></i> Ödev Bilgileri</h4>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Title" class="form-label fw-semibold"></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="MaxScore" class="form-label fw-semibold"></label>
+                    <input asp-for="MaxScore" class="form-control" type="number" min="1" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="DueDate" class="form-label fw-semibold"></label>
+                    <input asp-for="DueDate" class="form-control" type="datetime-local" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label fw-semibold"></label>
+                    <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2"></i> Sorular (@Model.Questions.Count adet)</h5>
+
+    @for (int i = 0; i < Model.Questions.Count; i++)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-light py-2 px-4 d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Soru @(i + 1)</span>
+                <span class="badge bg-primary">AI Üretimi</span>
+            </div>
+            <div class="card-body p-4">
+                <input type="hidden" name="Questions[@i].OrderIndex" value="@i" />
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Soru Metni</label>
+                    <textarea name="Questions[@i].QuestionText" class="form-control" rows="2">@Model.Questions[i].QuestionText</textarea>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small">A Şıkkı</label>
+                        <input name="Questions[@i].OptionA" class="form-control" value="@Model.Questions[i].OptionA" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">B Şıkkı</label>
+                        <input name="Questions[@i].OptionB" class="form-control" value="@Model.Questions[i].OptionB" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">C Şıkkı</label>
+                        <input name="Questions[@i].OptionC" class="form-control" value="@Model.Questions[i].OptionC" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">D Şıkkı</label>
+                        <input name="Questions[@i].OptionD" class="form-control" value="@Model.Questions[i].OptionD" />
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label small fw-semibold">Doğru Cevap</label>
+                    <div class="d-flex gap-3">
+                        @foreach (var opt in new[] { "A", "B", "C", "D" })
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="Questions[@i].CorrectAnswer" value="@opt"
+                                       id="q@(i)_@opt" @(Model.Questions[i].CorrectAnswer == opt ? "checked" : "") />
+                                <label class="form-check-label" for="q@(i)_@opt">@opt</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check-circle me-1"></i> Onayla ve Kaydet
+        </button>
+        <a asp-controller="SyllabusWeeks" asp-action="Detail" asp-route-id="@Model.SyllabusWeekId" class="btn btn-outline-secondary btn-lg">
+            İptal
+        </a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,44 @@
+@model EduLog.Web.ViewModels.EditSyllabusViewModel
+@{
+    ViewData["Title"] = "Müfredatı Düzenle";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Syllabi" asp-action="Index" asp-route-courseId="@Model.CourseId">@Model.CourseName</a></li>
+        <li class="breadcrumb-item active">Düzenle</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="fw-bold mb-4">
+                    <i class="bi bi-pencil me-2"></i> Müfredatı Düzenle
+                </h4>
+
+                <form asp-action="Edit" method="post">
+                    <input asp-for="Id" type="hidden" />
+                    <input asp-for="CourseId" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Title" class="form-label fw-semibold"></label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Kaydet
+                        </button>
+                        <a asp-controller="Syllabi" asp-action="Index" asp-route-courseId="@Model.CourseId" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,52 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h3 class="fw-bold">
+            <i class="bi bi-speedometer2 me-2"></i> Eğitmen Paneli
+        </h3>
+        <p class="text-muted">Hoş geldiniz! Derslerinizi ve sınıflarınızı buradan yönetebilirsiniz.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center p-4">
+                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-book text-primary fs-3"></i>
+                </div>
+                <h5 class="fw-bold">Dersler</h5>
+                <p class="text-muted small">Ders müfredatlarını oluşturun ve düzenleyin.</p>
+                <a href="#" class="btn btn-outline-primary btn-sm">Derslere Git</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center p-4">
+                <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-people text-success fs-3"></i>
+                </div>
+                <h5 class="fw-bold">Sınıflar</h5>
+                <p class="text-muted small">Sınıflarınızı yönetin ve öğrenci ilerlemelerini takip edin.</p>
+                <a href="#" class="btn btn-outline-success btn-sm">Sınıflara Git</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center p-4">
+                <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-file-earmark-text text-warning fs-3"></i>
+                </div>
+                <h5 class="fw-bold">Ödevler</h5>
+                <p class="text-muted small">Ödevler oluşturun ve teslim edilenleri değerlendirin.</p>
+                <a href="#" class="btn btn-outline-warning btn-sm">Ödevlere Git</a>
+            </div>
+        </div>
+    </div>
+</div>

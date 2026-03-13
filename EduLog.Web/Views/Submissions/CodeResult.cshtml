@@ -1,0 +1,47 @@
+@model EduLog.Web.ViewModels.CodeSubmissionResultViewModel
+@{
+    ViewData["Title"] = "Teslim Sonucu";
+    Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body p-5">
+                <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                <h3 class="fw-bold mt-3 mb-2">Teslim Edildi!</h3>
+                <p class="text-muted mb-4">@Model.AssignmentTitle</p>
+
+                <div class="card bg-light border-0 mb-4 mx-auto" style="max-width: 400px;">
+                    <div class="card-body p-4">
+                        <p class="small text-muted mb-1">Teslim Zamanı</p>
+                        <p class="fw-semibold mb-3">@Model.SubmittedAt.ToString("dd.MM.yyyy HH:mm")</p>
+
+                        @if (Model.Score.HasValue)
+                        {
+                            <p class="small text-muted mb-1">Puanınız</p>
+                            <p class="fs-2 fw-bold text-primary mb-0">@Model.Score / @Model.MaxScore</p>
+                            @if (!string.IsNullOrWhiteSpace(Model.InstructorNote))
+                            {
+                                <p class="small text-muted mt-2 mb-1">Eğitmen Notu</p>
+                                <p class="mb-0">@Model.InstructorNote</p>
+                            }
+                        }
+                        else
+                        {
+                            <div class="d-flex align-items-center justify-content-center gap-2 text-warning">
+                                <i class="bi bi-hourglass-split fs-4"></i>
+                                <span class="fw-semibold">Değerlendirme bekleniyor</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <a asp-controller="StudentDashboard" asp-action="ClassDetail" asp-route-id="@Model.ClassGroupId"
+                   class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i> Sınıfa Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

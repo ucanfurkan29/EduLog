@@ -1,0 +1,102 @@
+@model IEnumerable<EduLog.Core.Entities.SyllabusWeek>
+@{
+    var syllabus = (EduLog.Core.Entities.Syllabus)ViewBag.Syllabus;
+    var courseName = (string)ViewBag.CourseName;
+    ViewData["Title"] = $"{syllabus.Title} — Haftalar";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Syllabi" asp-action="Index" asp-route-courseId="@syllabus.CourseId">@courseName</a></li>
+        <li class="breadcrumb-item active">@syllabus.Title</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">
+        <i class="bi bi-calendar-week me-2"></i> @syllabus.Title — Haftalar
+    </h3>
+    <a asp-action="Create" asp-route-syllabusId="@syllabus.Id" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Hafta Ekle
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-calendar-week text-muted" style="font-size: 4rem;"></i>
+        <p class="text-muted mt-3 fs-5">Bu müfredata henüz hafta eklenmemiş.</p>
+        <a asp-action="Create" asp-route-syllabusId="@syllabus.Id" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> İlk Haftayı Ekleyin
+        </a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var week in Model)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+                        <span class="badge bg-primary fs-6">Hafta @week.WeekNumber</span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" asp-action="Edit" asp-route-id="@week.Id">
+                                        <i class="bi bi-pencil me-2"></i> Düzenle
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-action="Detail" asp-route-id="@week.Id">
+                                        <i class="bi bi-folder me-2"></i> Dosyalar
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form asp-action="Delete" asp-route-id="@week.Id" method="post"
+                                          onsubmit="return confirm('Bu haftayı ve tüm dosyalarını silmek istediğinize emin misiniz?');">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="bi bi-trash me-2"></i> Sil
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-2">@week.Topic</h5>
+                        @if (!string.IsNullOrEmpty(week.Examples))
+                        {
+                            <div class="mb-2">
+                                <small class="text-muted fw-semibold"><i class="bi bi-lightbulb me-1"></i> Örnekler:</small>
+                                <p class="small text-muted mb-0">@(week.Examples.Length > 120 ? week.Examples.Substring(0, 120) + "..." : week.Examples)</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(week.Notes))
+                        {
+                            <div class="mb-2">
+                                <small class="text-muted fw-semibold"><i class="bi bi-sticky me-1"></i> Notlar:</small>
+                                <p class="small text-muted mb-0">@(week.Notes.Length > 120 ? week.Notes.Substring(0, 120) + "..." : week.Notes)</p>
+                            </div>
+                        }
+                        <div class="d-flex gap-3 text-muted small mt-3">
+                            <span><i class="bi bi-file-earmark me-1"></i> @week.Resources.Count dosya</span>
+                            <span><i class="bi bi-clipboard-check me-1"></i> @week.Assignments.Count ödev</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-top px-4 py-3">
+                        <a asp-action="Detail" asp-route-id="@week.Id" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="bi bi-folder-open me-1"></i> Detay & Dosyalar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

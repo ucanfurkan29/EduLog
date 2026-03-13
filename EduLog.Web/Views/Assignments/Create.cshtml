@@ -1,0 +1,187 @@
+@model EduLog.Web.ViewModels.CreateAssignmentViewModel
+@{
+    ViewData["Title"] = "Yeni Ödev Ekle";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
+        <li class="breadcrumb-item">@Model.CourseName</li>
+        <li class="breadcrumb-item"><a asp-controller="SyllabusWeeks" asp-action="Detail" asp-route-id="@Model.SyllabusWeekId">Hafta @Model.WeekNumber</a></li>
+        <li class="breadcrumb-item active">Yeni Ödev</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 px-4">
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-plus-circle me-2"></i> Yeni Ödev Ekle
+        </h4>
+        <p class="text-muted small mb-0 mt-1">Hafta @Model.WeekNumber — @Model.WeekTopic</p>
+    </div>
+    <div class="card-body p-4">
+        <form asp-action="Create" method="post" id="assignmentForm">
+            <input type="hidden" asp-for="SyllabusWeekId" />
+            <input type="hidden" asp-for="SyllabusId" />
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <label asp-for="Title" class="form-label fw-semibold"></label>
+                    <input asp-for="Title" class="form-control" placeholder="Ödev başlığı girin" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="MaxScore" class="form-label fw-semibold"></label>
+                    <input asp-for="MaxScore" class="form-control" type="number" min="1" max="1000" />
+                    <span asp-validation-for="MaxScore" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Description" class="form-label fw-semibold"></label>
+                <textarea asp-for="Description" class="form-control" rows="3" placeholder="Opsiyonel açıklama"></textarea>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label asp-for="Type" class="form-label fw-semibold"></label>
+                    <div class="d-flex gap-4 mt-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" asp-for="Type" value="CodeTask" id="typeCodeTask" checked />
+                            <label class="form-check-label" for="typeCodeTask">
+                                <i class="bi bi-code-slash me-1"></i> Kodlama Ödevi
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" asp-for="Type" value="MultipleChoice" id="typeMultipleChoice" />
+                            <label class="form-check-label" for="typeMultipleChoice">
+                                <i class="bi bi-ui-checks me-1"></i> Çoktan Seçmeli
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="DueDate" class="form-label fw-semibold"></label>
+                    <input asp-for="DueDate" class="form-control" type="datetime-local" />
+                </div>
+            </div>
+
+            <!-- Dinamik Soru Bölümü -->
+            <div id="questionsSection" style="display: none;">
+                <hr />
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-list-check me-2"></i> Sorular</h5>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuestion()">
+                        <i class="bi bi-plus me-1"></i> Soru Ekle
+                    </button>
+                </div>
+                <div id="questionsContainer"></div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-lg me-1"></i> Kaydet
+                </button>
+                <a asp-controller="SyllabusWeeks" asp-action="Detail" asp-route-id="@Model.SyllabusWeekId" class="btn btn-outline-secondary">
+                    İptal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let questionIndex = 0;
+
+        document.querySelectorAll('input[name="Type"]').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                var section = document.getElementById('questionsSection');
+                if (this.value === 'MultipleChoice') {
+                    section.style.display = 'block';
+                    if (questionIndex === 0) addQuestion();
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function () {
+            var checked = document.querySelector('input[name="Type"]:checked');
+            if (checked && checked.value === 'MultipleChoice') {
+                document.getElementById('questionsSection').style.display = 'block';
+                if (questionIndex === 0) addQuestion();
+            }
+        });
+
+        function addQuestion() {
+            var container = document.getElementById('questionsContainer');
+            var idx = questionIndex;
+            var html = `
+            <div class="card border mb-3" id="question_${idx}">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-semibold">Soru ${idx + 1}</span>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuestion(${idx})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+                <div class="card-body p-3">
+                    <input type="hidden" name="Questions[${idx}].OrderIndex" value="${idx}" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Soru Metni</label>
+                        <textarea name="Questions[${idx}].QuestionText" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small">A Şıkkı</label>
+                            <input name="Questions[${idx}].OptionA" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">B Şıkkı</label>
+                            <input name="Questions[${idx}].OptionB" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">C Şıkkı</label>
+                            <input name="Questions[${idx}].OptionC" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">D Şıkkı</label>
+                            <input name="Questions[${idx}].OptionD" class="form-control" required />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label small fw-semibold">Doğru Cevap</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="Questions[${idx}].CorrectAnswer" value="A" id="q${idx}_A" checked />
+                                <label class="form-check-label" for="q${idx}_A">A</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="Questions[${idx}].CorrectAnswer" value="B" id="q${idx}_B" />
+                                <label class="form-check-label" for="q${idx}_B">B</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="Questions[${idx}].CorrectAnswer" value="C" id="q${idx}_C" />
+                                <label class="form-check-label" for="q${idx}_C">C</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="Questions[${idx}].CorrectAnswer" value="D" id="q${idx}_D" />
+                                <label class="form-check-label" for="q${idx}_D">D</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+            questionIndex++;
+        }
+
+        function removeQuestion(idx) {
+            var el = document.getElementById('question_' + idx);
+            if (el) el.remove();
+        }
+    </script>
+}

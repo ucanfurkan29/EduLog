@@ -1,0 +1,55 @@
+@model EduLog.Web.ViewModels.StudentClassDetailViewModel
+@{
+    ViewData["Title"] = Model.ClassName;
+    Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-book me-2"></i> @Model.ClassName
+        </h3>
+        <p class="text-muted mb-0">@Model.CourseName — Hafta @Model.CurrentWeek</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Sınıflarıma Dön
+    </a>
+</div>
+
+@if (!Model.OpenWeeks.Any())
+{
+    <div class="text-center py-5">
+        <i class="bi bi-lock text-muted" style="font-size: 4rem;"></i>
+        <p class="text-muted mt-3 fs-5">Henüz açılmış hafta bulunmuyor.</p>
+        <p class="text-muted small">Eğitmeniniz haftaları sırayla açacaktır.</p>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var week in Model.OpenWeeks)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                <span class="fw-bold text-success">@week.WeekNumber</span>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0">Hafta @week.WeekNumber</h6>
+                                <small class="text-muted">@week.Topic</small>
+                            </div>
+                        </div>
+                        <a asp-action="WeekDetail"
+                           asp-route-classGroupId="@Model.ClassGroupId"
+                           asp-route-weekNumber="@week.WeekNumber"
+                           class="btn btn-outline-success btn-sm w-100">
+                            <i class="bi bi-eye me-1"></i> Detay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
