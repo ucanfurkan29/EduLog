@@ -45,6 +45,8 @@ builder.Services.AddScoped<IWeekResourceService, WeekResourceService>();
 builder.Services.AddScoped<IAssignmentService, AssignmentService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddHttpClient<IAnthropicService, AnthropicService>();
+builder.Services.AddScoped<AnthropicService>();
+builder.Services.AddScoped<GeminiService>();
 
 // Add MVC
 builder.Services.AddControllersWithViews();
