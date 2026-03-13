@@ -11,6 +11,7 @@
 [![SQL Server](https://img.shields.io/badge/SQL_Server-LocalDB-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)](https://www.microsoft.com/sql-server)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white)](https://getbootstrap.com/)
 [![Claude AI](https://img.shields.io/badge/Claude_AI-Anthropic-FF6B35?style=for-the-badge)](https://www.anthropic.com/)
+[![Gemini AI](https://img.shields.io/badge/Gemini_AI-Google-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 
 </div>
 
@@ -20,7 +21,9 @@
 
 **EduLog**, yazılım eğitmenlerinin ders müfredatlarını, sınıflarını, ödevlerini ve öğrenci performansını tek bir yerden yönetmesini sağlayan modern bir web uygulamasıdır.
 
-Eğitmen müfredatı önceden hazırlar, sınıf açtığında o müfredatı bağlar ve **hafta hafta** öğrencilere içerik açar. Öğrenciler sınıfa katılmak için eğitmenin paylaştığı JoinCode'u kullanır. AI destekli ödev üretimi sayesinde Claude API üzerinden çoktan seçmeli sorular otomatik oluşturulabilir.
+Eğitmen müfredatı önceden hazırlar, sınıf açtığında o müfredatı bağlar ve **hafta hafta** öğrencilere içerik açar. Öğrenciler sınıfa katılmak için eğitmenin paylaştığı JoinCode'u kullanır. AI destekli ödev üretimi sayesinde **Claude** veya **Gemini** API üzerinden çoktan seçmeli sorular ve kodlama ödevleri otomatik oluşturulabilir.
+
+> 📋 **Proje Yönetimi:** Geliştirme süreci [Linear](https://linear.app/edulogplatform/project/edulog-platform-4a1191f7e725) üzerinden takip edilmektedir.
 
 ---
 
@@ -30,13 +33,14 @@ Eğitmen müfredatı önceden hazırlar, sınıf açtığında o müfredatı ba�
 - 📚 **Ders Yönetimi** — Ders oluştur, düzenle, sil
 - 📋 **Müfredat Yönetimi** — Haftalık konu, not, örnek kod ve PDF kaynakları ekle
 - 🏫 **Sınıf Yönetimi** — Sınıf oluştur, JoinCode paylaş, hafta hafta içerik aç
-- 📝 **Ödev Sistemi** — Manuel ödev oluştur veya **AI ile çoktan seçmeli sorular üret**
+- 📝 **Ödev Sistemi** — Manuel ödev oluştur veya **AI ile çoktan seçmeli sorular / kodlama ödevleri üret**
+- 🤖 **AI Kod İnceleme** — Öğrenci kod ödevlerini AI ile otomatik inceletme ve geri bildirim
 - 🏆 **Leaderboard** — Sınıf içi puan sıralaması, öğrenci submission'larını görüntüle ve puan gir
 
 ### 🎓 Öğrenci Paneli
 - 🔑 **JoinCode ile Kayıt** — Sisteme öğrenci olarak katıl
 - 📅 **Açık Haftalara Göz At** — Konu, notlar, örnek kodlar, PDF kaynaklar
-- 📤 **Ödev Teslimi** — Kod ödevleri ve çoktan seçmeli quizler
+- 📤 **Ödev Teslimi** — Kod ödevleri (StarterCode ile) ve çoktan seçmeli quizler
 - 🥇 **Sıralamam** — Sınıf içindeki kendi pozisyonunu takip et
 
 ---
@@ -47,7 +51,7 @@ Eğitmen müfredatı önceden hazırlar, sınıf açtığında o müfredatı ba�
 EduLog/
 ├── EduLog.Core/        → Entities, Interfaces, DTOs
 ├── EduLog.Data/        → DbContext, EF Migrations, Repository Pattern
-├── EduLog.Services/    → Business Logic, AI Service (Anthropic), File Service
+├── EduLog.Services/    → Business Logic, AI Services (Anthropic + Gemini), File Service
 └── EduLog.Web/         → ASP.NET Core MVC, Controllers, Razor Views, wwwroot
 ```
 
@@ -61,7 +65,9 @@ EduLog/
 Courses ──── Syllabi ──── SyllabusWeeks ──── WeekResources
                               │
                               ├──── Assignments ──── AssignmentQuestions
-                              │
+                              │          │
+                              │          ├──── AIGeneratedCodeTask
+                              │          └──── AICodeReview
 ClassGroups ─────────────────┘
     │
     ├──── ClassEnrollments ──── ApplicationUser
@@ -71,18 +77,41 @@ ClassGroups ─────────────────┘
 
 ---
 
-## 🤖 AI Ödev Üretici Akışı
+## 🤖 AI Entegrasyonu
+
+EduLog, **iki farklı AI provider** destekler. Eğitmen ödev üretirken istediği provider'ı seçebilir:
+
+| Provider | Kullanım Alanı | Model |
+|----------|---------------|-------|
+| **Anthropic Claude** | Çoktan seçmeli soru + Kod ödevi üretimi + Kod inceleme | `claude-sonnet-4-6` |
+| **Google Gemini** | Çoktan seçmeli soru + Kod ödevi üretimi + Kod inceleme | `gemini-3.1-flash-lite-preview` |
+
+### Çoktan Seçmeli Ödev Üretimi
 
 ```
-Eğitmen "AI ile Ödev Üret" butonuna tıklar
+Eğitmen "AI ile Ödev Üret" butonuna tıklar → Provider seçer (Claude/Gemini)
         ↓
-Haftanın konusu + notlar + örnekler Claude API'ye gönderilir
+Haftanın konusu + notlar + örnekler API'ye gönderilir
         ↓
 5 adet çoktan seçmeli soru JSON formatında döner
         ↓
 Önizleme ekranında gösterilir → Eğitmen onaylar
         ↓
 Veritabanına kaydedilir ✓
+```
+
+### Kod Ödevi Üretimi & İncelemesi
+
+```
+Eğitmen "AI ile Kod Ödevi Üret" seçer → Provider seçer
+        ↓
+Haftanın konusuna uygun kodlama ödevi + StarterCode üretilir
+        ↓
+Öğrenci kodu yazar ve gönderir
+        ↓
+Eğitmen "AI ile İncele" tıklar → Kod otomatik incelenir
+        ↓
+Doğruluk, Kod Kalitesi, Verimlilik, Öneriler raporlanır ✓
 ```
 
 ---
@@ -92,7 +121,7 @@ Veritabanına kaydedilir ✓
 ### Gereksinimler
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [SQL Server LocalDB](https://www.microsoft.com/sql-server) (Visual Studio ile birlikte gelir)
-- [Anthropic API Key](https://www.anthropic.com/) (AI ödev üretici için)
+- [Anthropic API Key](https://www.anthropic.com/) ve/veya [Google Gemini API Key](https://ai.google.dev/) (AI ödev üretici için)
 
 ### Adımlar
 
@@ -115,6 +144,10 @@ cd EduLog
   "AnthropicApi": {
     "ApiKey": "YOUR_ANTHROPIC_API_KEY",
     "Model": "claude-sonnet-4-6"
+  },
+  "GeminiApi": {
+    "ApiKey": "YOUR_GEMINI_API_KEY",
+    "Model": "gemini-3.1-flash-lite-preview"
   }
 }
 ```
@@ -157,9 +190,10 @@ dotnet run
 | ORM | Entity Framework Core 8 |
 | Veritabanı | SQL Server (LocalDB) |
 | Kimlik Doğrulama | ASP.NET Core Identity |
-| Yapay Zeka | Anthropic Claude API |
+| Yapay Zeka | Anthropic Claude + Google Gemini |
 | Frontend | Razor Views + Bootstrap 5 |
 | Dosya Depolama | Local FileSystem (`wwwroot/uploads`) |
+| Proje Yönetimi | Linear |
 
 ---
 
@@ -172,11 +206,13 @@ dotnet run
 - ✅ API key'ler `appsettings.json`'dan okunur, hardcode yok
 - ✅ Soft delete yok, hard delete uygulanır
 - ✅ JoinCode: 6 haneli, alfanümerik, büyük harf, unique (örn: `PY2024`)
+- ✅ AI provider seçimi: Claude ve Gemini arasında geçiş yapılabilir
 
 ---
 
 ## 🗺️ Geliştirme Yol Haritası
 
+### ✅ v1.0 — Çekirdek Platform (Tamamlandı)
 - [x] Solution ve proje yapısı
 - [x] EF Core + SQL Server bağlantısı + DbContext
 - [x] ASP.NET Core Identity + Seed Data
@@ -189,7 +225,28 @@ dotnet run
 - [x] Assignments CRUD (manuel)
 - [x] Submission sistemi (CodeTask + MultipleChoice)
 - [x] Claude API entegrasyonu (AI ödev üretici)
+- [x] Gemini API entegrasyonu
+- [x] AI Kod Ödevi üretimi ve incelemesi
 - [x] Leaderboard ve manuel puanlama
+
+### 🔧 v1.1 — Bug Fix & UX İyileştirmeleri
+- [ ] İşlevsiz navigasyon butonlarının düzeltilmesi
+- [ ] AI hata mesajlarının iyileştirilmesi
+- [ ] Frontend dosya boyutu validasyonu
+- [ ] Toplu AI kod incelemesi (Tümünü İncele ve Kaydet)
+- [ ] Kod editörü syntax highlighting
+
+### 📊 v1.2 — Dashboard & İstatistikler
+- [ ] Öğrenci profil sayfası ve istatistikler
+- [ ] Eğitmen dashboard istatistikleri
+- [ ] Bildirim sistemi
+- [ ] Ödev deadline sistemi
+
+### 🚀 v2.0 — Gelişmiş Özellikler
+- [ ] PDF dışa aktarma (öğrenci karnesi)
+- [ ] Dark mode desteği
+- [ ] Responsive mobil iyileştirme
+- [ ] Real-time leaderboard (SignalR)
 
 ---
 
