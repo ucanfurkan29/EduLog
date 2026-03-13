@@ -54,7 +54,8 @@ namespace EduLog.Web.Controllers
                     Score = existing.Score,
                     InstructorNote = existing.InstructorNote,
                     SubmittedAt = existing.SubmittedAt,
-                    ClassGroupId = classGroupId
+                    ClassGroupId = classGroupId,
+                    SubmittedContent = existing.Content
                 });
             }
 
@@ -64,7 +65,10 @@ namespace EduLog.Web.Controllers
                 ClassGroupId = classGroupId,
                 AssignmentTitle = assignment.Title,
                 AssignmentDescription = assignment.Description,
-                MaxScore = assignment.MaxScore
+                ExpectedBehavior = assignment.ExpectedBehavior,
+                StarterCode = assignment.StarterCode,
+                MaxScore = assignment.MaxScore,
+                Content = assignment.StarterCode ?? ""
             };
 
             return View(model);
@@ -82,6 +86,8 @@ namespace EduLog.Web.Controllers
                 var assignment = await _assignmentService.GetByIdAsync(model.AssignmentId);
                 model.AssignmentTitle = assignment?.Title ?? "";
                 model.AssignmentDescription = assignment?.Description;
+                model.ExpectedBehavior = assignment?.ExpectedBehavior;
+                model.StarterCode = assignment?.StarterCode;
                 model.MaxScore = assignment?.MaxScore ?? 0;
                 return View(model);
             }
@@ -113,7 +119,8 @@ namespace EduLog.Web.Controllers
                 MaxScore = assignmentForResult?.MaxScore ?? 0,
                 Score = null,
                 SubmittedAt = submission.SubmittedAt,
-                ClassGroupId = model.ClassGroupId
+                ClassGroupId = model.ClassGroupId,
+                SubmittedContent = model.Content
             });
         }
 
@@ -145,7 +152,8 @@ namespace EduLog.Web.Controllers
                     MaxScore = assignment.MaxScore,
                     CorrectCount = correctCount,
                     TotalCount = assignment.Questions.Count,
-                    ClassGroupId = classGroupId
+                    ClassGroupId = classGroupId,
+                    QuestionResults = BuildQuestionResults(existing.Content, assignment.Questions)
                 });
             }
 
@@ -219,8 +227,33 @@ namespace EduLog.Web.Controllers
                 MaxScore = assignment.MaxScore,
                 CorrectCount = correctCount,
                 TotalCount = assignment.Questions.Count,
-                ClassGroupId = model.ClassGroupId
+                ClassGroupId = model.ClassGroupId,
+                QuestionResults = BuildQuestionResults(answersString, assignment.Questions)
             });
+        }
+
+        private List<QuizQuestionResultItem> BuildQuestionResults(string answersString, ICollection<AssignmentQuestion> questions)
+        {
+            var answers = answersString.Split(',');
+            var orderedQuestions = questions.OrderBy(q => q.OrderIndex).ToList();
+            var results = new List<QuizQuestionResultItem>();
+            for (int i = 0; i < orderedQuestions.Count; i++)
+            {
+                var q = orderedQuestions[i];
+                var studentAnswer = i < answers.Length ? answers[i].Trim() : "";
+                results.Add(new QuizQuestionResultItem
+                {
+                    QuestionText = q.QuestionText,
+                    StudentAnswer = studentAnswer,
+                    CorrectAnswer = q.CorrectAnswer,
+                    IsCorrect = string.Equals(studentAnswer, q.CorrectAnswer, StringComparison.OrdinalIgnoreCase),
+                    OptionA = q.OptionA,
+                    OptionB = q.OptionB,
+                    OptionC = q.OptionC,
+                    OptionD = q.OptionD
+                });
+            }
+            return results;
         }
 
         private int CalculateCorrectCount(string answersString, ICollection<AssignmentQuestion> questions)

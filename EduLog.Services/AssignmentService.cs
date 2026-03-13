@@ -87,6 +87,18 @@ namespace EduLog.Services
 
             if (assignment != null)
             {
+                // Remove related submissions first (Restrict relationship)
+                if (assignment.Submissions.Any())
+                {
+                    _context.Submissions.RemoveRange(assignment.Submissions);
+                }
+
+                // Remove related questions
+                if (assignment.Questions.Any())
+                {
+                    _context.AssignmentQuestions.RemoveRange(assignment.Questions);
+                }
+
                 _context.Assignments.Remove(assignment);
                 await _context.SaveChangesAsync();
             }

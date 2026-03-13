@@ -4,6 +4,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EduLog.Services
 {
+    // DTOs for leaderboard and class overview
+    public class LeaderboardEntry
+    {
+        public int Rank { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public int TotalScore { get; set; }
+        public int SubmissionCount { get; set; }
+    }
+
+    public class WeekSubmissionStat
+    {
+        public int WeekNumber { get; set; }
+        public string Topic { get; set; } = string.Empty;
+        public int StudentsSubmittedCount { get; set; }
+    }
+
+    public class ClassOverviewStats
+    {
+        public List<WeekSubmissionStat> WeekStats { get; set; } = new();
+        public int UngradedCodeTaskCount { get; set; }
+    }
+
     public interface IClassGroupService
     {
         Task<ClassGroup?> GetByJoinCodeAsync(string joinCode);
@@ -14,6 +36,8 @@ namespace EduLog.Services
         Task<bool> AdvanceWeekAsync(int id);
         Task<IEnumerable<ClassEnrollment>> GetEnrollmentsAsync(int classGroupId);
         Task<string> GenerateUniqueJoinCodeAsync();
+        Task<List<LeaderboardEntry>> GetLeaderboardAsync(int classGroupId);
+        Task<ClassOverviewStats> GetClassOverviewStatsAsync(int classGroupId);
     }
 
     public class ClassGroupService : IClassGroupService
@@ -112,6 +136,94 @@ namespace EduLog.Services
             while (await _context.ClassGroups.AnyAsync(cg => cg.JoinCode == code));
 
             return code;
+        }
+
+        public async Task<List<LeaderboardEntry>> GetLeaderboardAsync(int classGroupId)
+        {
+            // Get all enrolled students
+            var enrollments = await _context.ClassEnrollments
+                .Include(e => e.User)
+                .Where(e => e.ClassGroupId == classGroupId)
+                .ToListAsync();
+
+            // Get all submissions with scores for this class group
+            var submissions = await _context.Submissions
+                .Where(s => s.ClassGroupId == classGroupId && s.Score.HasValue)
+                .ToListAsync();
+
+            var leaderboard = enrollments.Select(e =>
+            {
+                var studentSubs = submissions.Where(s => s.UserId == e.UserId).ToList();
+                return new LeaderboardEntry
+                {
+                    FullName = e.User.FullName,
+                    TotalScore = studentSubs.Sum(s => s.Score ?? 0),
+                    SubmissionCount = studentSubs.Count
+                };
+            })
+            .OrderByDescending(l => l.TotalScore)
+            .ThenBy(l => l.FullName)
+            .ToList();
+
+            // Assign ranks
+            for (int i = 0; i < leaderboard.Count; i++)
+            {
+                leaderboard[i].Rank = i + 1;
+            }
+
+            return leaderboard;
+        }
+
+        public async Task<ClassOverviewStats> GetClassOverviewStatsAsync(int classGroupId)
+        {
+            var classGroup = await _context.ClassGroups
+                .Include(cg => cg.Syllabus)
+                    .ThenInclude(s => s.Weeks.OrderBy(w => w.WeekNumber))
+                        .ThenInclude(w => w.Assignments)
+                .FirstOrDefaultAsync(cg => cg.Id == classGroupId);
+
+            if (classGroup == null)
+                return new ClassOverviewStats();
+
+            var allAssignmentIds = classGroup.Syllabus.Weeks
+                .SelectMany(w => w.Assignments)
+                .Select(a => a.Id)
+                .ToList();
+
+            var submissions = await _context.Submissions
+                .Include(s => s.Assignment)
+                .Where(s => s.ClassGroupId == classGroupId && allAssignmentIds.Contains(s.AssignmentId))
+                .ToListAsync();
+
+            // Per-week stats: how many distinct students submitted at least 1 assignment
+            var weekStats = classGroup.Syllabus.Weeks
+                .Where(w => w.WeekNumber <= classGroup.CurrentWeek)
+                .Select(w =>
+                {
+                    var weekAssignmentIds = w.Assignments.Select(a => a.Id).ToList();
+                    var studentsSubmitted = submissions
+                        .Where(s => weekAssignmentIds.Contains(s.AssignmentId))
+                        .Select(s => s.UserId)
+                        .Distinct()
+                        .Count();
+
+                    return new WeekSubmissionStat
+                    {
+                        WeekNumber = w.WeekNumber,
+                        Topic = w.Topic,
+                        StudentsSubmittedCount = studentsSubmitted
+                    };
+                }).ToList();
+
+            // Ungraded CodeTask count
+            var ungradedCount = submissions
+                .Count(s => s.Assignment.Type == "CodeTask" && !s.Score.HasValue);
+
+            return new ClassOverviewStats
+            {
+                WeekStats = weekStats,
+                UngradedCodeTaskCount = ungradedCount
+            };
         }
     }
 }

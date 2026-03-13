@@ -5,43 +5,113 @@
 }
 
 <div class="row justify-content-center mt-4">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm text-center">
-            <div class="card-body p-5">
-                <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
-                <h3 class="fw-bold mt-3 mb-2">Teslim Edildi!</h3>
-                <p class="text-muted mb-4">@Model.AssignmentTitle</p>
+    <div class="col-lg-9">
+        @if (Model.Score.HasValue)
+        {
+            double percentage = Model.MaxScore > 0 ? (double)Model.Score.Value / Model.MaxScore * 100 : 0;
+            string scoreColor = percentage >= 80 ? "#198754" : percentage >= 50 ? "#ffc107" : "#dc3545";
+            string scoreBg = percentage >= 80 ? "rgba(25,135,84,0.1)" : percentage >= 50 ? "rgba(255,193,7,0.1)" : "rgba(220,53,69,0.1)";
 
-                <div class="card bg-light border-0 mb-4 mx-auto" style="max-width: 400px;">
-                    <div class="card-body p-4">
-                        <p class="small text-muted mb-1">Teslim Zamanı</p>
-                        <p class="fw-semibold mb-3">@Model.SubmittedAt.ToString("dd.MM.yyyy HH:mm")</p>
-
-                        @if (Model.Score.HasValue)
-                        {
-                            <p class="small text-muted mb-1">Puanınız</p>
-                            <p class="fs-2 fw-bold text-primary mb-0">@Model.Score / @Model.MaxScore</p>
-                            @if (!string.IsNullOrWhiteSpace(Model.InstructorNote))
-                            {
-                                <p class="small text-muted mt-2 mb-1">Eğitmen Notu</p>
-                                <p class="mb-0">@Model.InstructorNote</p>
-                            }
-                        }
-                        else
-                        {
-                            <div class="d-flex align-items-center justify-content-center gap-2 text-warning">
-                                <i class="bi bi-hourglass-split fs-4"></i>
-                                <span class="fw-semibold">Değerlendirme bekleniyor</span>
-                            </div>
-                        }
+            <!-- Score Circle -->
+            <div class="card border-0 shadow-sm text-center mb-4">
+                <div class="card-body p-5">
+                    <p class="text-muted mb-2">Önerilen Puan</p>
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                         style="width: 120px; height: 120px; background: @scoreBg; border: 4px solid @scoreColor;">
+                        <span class="fw-bold" style="font-size: 2.5rem; color: @scoreColor;">@Model.Score</span>
                     </div>
+                    <p class="text-muted mb-2">/ @Model.MaxScore</p>
+                    <h4 class="fw-bold mb-2">@Model.AssignmentTitle</h4>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-clock me-1"></i> Teslim: @Model.SubmittedAt.ToString("dd.MM.yyyy HH:mm")
+                    </p>
+                </div>
+            </div>
+
+            @if (Model.HasAIReview)
+            {
+                <!-- Genel Değerlendirme - Blue/Gray -->
+                <div class="rounded-3 p-4 mb-3" style="background-color: #f0f4f8; border-left: 5px solid #6c757d;">
+                    <h6 class="fw-bold mb-2" style="color: #495057;">
+                        <i class="bi bi-chat-text me-2"></i> Genel Değerlendirme
+                    </h6>
+                    <p class="mb-0" style="white-space: pre-wrap;">@Model.Summary</p>
                 </div>
 
-                <a asp-controller="StudentDashboard" asp-action="ClassDetail" asp-route-id="@Model.ClassGroupId"
-                   class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-left me-1"></i> Sınıfa Dön
-                </a>
+                <!-- İyi Yapılan Şeyler - Green -->
+                <div class="rounded-3 p-4 mb-3" style="background-color: #d4edda; border-left: 5px solid #198754;">
+                    <h6 class="fw-bold mb-2 text-success">
+                        <i class="bi bi-check-circle me-2"></i> İyi Yapılan Şeyler
+                    </h6>
+                    <p class="mb-0" style="white-space: pre-wrap;">@Model.Strengths</p>
+                </div>
+
+                <!-- Geliştirilmesi Gerekenler - Yellow -->
+                <div class="rounded-3 p-4 mb-3" style="background-color: #fff3cd; border-left: 5px solid #ffc107;">
+                    <h6 class="fw-bold mb-2 text-warning">
+                        <i class="bi bi-exclamation-circle me-2"></i> Geliştirilmesi Gerekenler
+                    </h6>
+                    <p class="mb-0" style="white-space: pre-wrap;">@Model.Improvements</p>
+                </div>
+
+                <!-- Eksik Kalan Şeyler - Red/Pink -->
+                <div class="rounded-3 p-4 mb-3" style="background-color: #f8d7da; border-left: 5px solid #dc3545;">
+                    <h6 class="fw-bold mb-2 text-danger">
+                        <i class="bi bi-x-circle me-2"></i> Eksik Kalan Şeyler
+                    </h6>
+                    <p class="mb-0" style="white-space: pre-wrap;">@Model.MissingParts</p>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(Model.InstructorNote))
+            {
+                <!-- Instructor Note -->
+                <div class="rounded-3 p-4 mb-3" style="background-color: #f0f4f8; border-left: 5px solid #0d6efd;">
+                    <h6 class="fw-bold mb-2 text-primary">
+                        <i class="bi bi-person-badge me-2"></i> Eğitmen Notu
+                    </h6>
+                    <p class="mb-0" style="white-space: pre-wrap;">@Model.InstructorNote</p>
+                </div>
+            }
+        }
+        else
+        {
+            <!-- No score yet — waiting for review -->
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body p-5">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                         style="width: 100px; height: 100px; background: rgba(255,193,7,0.1); border: 4px solid #ffc107;">
+                        <i class="bi bi-hourglass-split text-warning" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h4 class="fw-bold mt-3 mb-2">Teslim Alındı!</h4>
+                    <p class="text-muted mb-2">@Model.AssignmentTitle</p>
+                    <p class="text-muted small mb-4">
+                        <i class="bi bi-clock me-1"></i> Teslim: @Model.SubmittedAt.ToString("dd.MM.yyyy HH:mm")
+                    </p>
+                    <div class="d-flex align-items-center justify-content-center gap-2 text-warning mb-3">
+                        <i class="bi bi-clock-history fs-4"></i>
+                        <span class="fw-semibold">Öğretmeniniz kodunuzu inceliyor</span>
+                    </div>
+                </div>
             </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Model.SubmittedContent))
+        {
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white py-3 px-4">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-file-earmark-code me-2"></i> Teslim Edilen Kod</h6>
+                </div>
+                <div class="card-body p-0">
+                    <pre class="mb-0 p-4" style="background-color: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; overflow-x: auto; border-radius: 0 0 0.375rem 0.375rem; white-space: pre-wrap;">@Model.SubmittedContent</pre>
+                </div>
+            </div>
+        }
+
+        <div class="text-center mt-4">
+            <a asp-controller="StudentDashboard" asp-action="ClassDetail" asp-route-id="@Model.ClassGroupId"
+               class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-1"></i> Sınıfa Dön
+            </a>
         </div>
     </div>
 </div>

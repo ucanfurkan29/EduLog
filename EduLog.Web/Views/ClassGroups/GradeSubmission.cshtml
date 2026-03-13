@@ -20,11 +20,25 @@
     <!-- Sol: Teslim İçeriği -->
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3 px-4">
-                <h5 class="fw-bold mb-0">
-                    <i class="bi bi-file-earmark-code me-2"></i> Teslim İçeriği
-                </h5>
-                <small class="text-muted">Teslim: @Model.SubmittedAt.ToString("dd.MM.yyyy HH:mm")</small>
+            <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-file-earmark-code me-2"></i> Teslim İçeriği
+                    </h5>
+                    <small class="text-muted">Teslim: @Model.SubmittedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                </div>
+                @if (Model.AssignmentType == "CodeTask")
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="aiProvider" class="form-select form-select-sm" style="width: auto;">
+                            <option value="anthropic">Claude</option>
+                            <option value="gemini">Gemini</option>
+                        </select>
+                        <button type="button" class="btn btn-outline-info btn-sm" id="btnAIReview" onclick="requestAIReview()">
+                            <i class="bi bi-robot me-1"></i> AI ile Değerlendir
+                        </button>
+                    </div>
+                }
             </div>
             <div class="card-body p-4">
                 <pre class="bg-dark text-light p-3 rounded" style="font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; max-height: 500px; overflow-y: auto;">@Model.Content</pre>
@@ -49,6 +63,9 @@
                     <input type="hidden" asp-for="Content" />
                     <input type="hidden" asp-for="MaxScore" />
                     <input type="hidden" asp-for="SubmittedAt" />
+                    <input type="hidden" asp-for="AssignmentType" />
+                    <input type="hidden" asp-for="AssignmentDescription" />
+                    <input type="hidden" asp-for="ExpectedBehavior" />
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-muted small">Öğrenci</label>
@@ -62,13 +79,13 @@
 
                     <div class="mb-3">
                         <label asp-for="Score" class="form-label fw-semibold"></label>
-                        <input asp-for="Score" class="form-control form-control-lg" type="number" min="0" max="@Model.MaxScore" />
+                        <input asp-for="Score" class="form-control form-control-lg" type="number" min="0" max="@Model.MaxScore" id="scoreInput" />
                         <span asp-validation-for="Score" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-4">
                         <label asp-for="InstructorNote" class="form-label fw-semibold"></label>
-                        <textarea asp-for="InstructorNote" class="form-control" rows="4" placeholder="Opsiyonel geri bildirim..."></textarea>
+                        <textarea asp-for="InstructorNote" class="form-control" rows="4" placeholder="Opsiyonel geri bildirim..." id="instructorNoteInput"></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-success w-100">
@@ -80,6 +97,152 @@
     </div>
 </div>
 
+<!-- AI Değerlendirme Modal -->
+<div class="modal fade" id="aiReviewModal" tabindex="-1" aria-labelledby="aiReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="aiReviewModalLabel">
+                    <i class="bi bi-robot me-2"></i> AI Değerlendirme Sonucu
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Loading -->
+                <div id="aiReviewLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Yükleniyor...</span>
+                    </div>
+                    <p class="text-muted mt-3">AI değerlendirmesi yapılıyor, lütfen bekleyin...</p>
+                </div>
+
+                <!-- Error -->
+                <div id="aiReviewError" class="d-none">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="aiReviewErrorText"></span>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div id="aiReviewResult" class="d-none">
+                    <!-- Önerilen Puan -->
+                    <div class="text-center mb-4">
+                        <p class="text-muted small mb-1">Önerilen Puan</p>
+                        <div class="d-inline-block bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                            <span class="fs-2 fw-bold" id="aiSuggestedScore">0</span>
+                        </div>
+                        <p class="text-muted small mt-1">/ @Model.MaxScore</p>
+                    </div>
+
+                    <!-- Genel Değerlendirme -->
+                    <div class="card border-0 bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-bold"><i class="bi bi-chat-text me-1"></i> Genel Değerlendirme</h6>
+                            <p class="mb-0" id="aiSummary"></p>
+                        </div>
+                    </div>
+
+                    <!-- İyi Yapılan Şeyler -->
+                    <div class="card border-0 mb-3" style="background-color: #d4edda;">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-success"><i class="bi bi-check-circle me-1"></i> İyi Yapılan Şeyler</h6>
+                            <p class="mb-0" id="aiStrengths"></p>
+                        </div>
+                    </div>
+
+                    <!-- Geliştirilmesi Gerekenler -->
+                    <div class="card border-0 mb-3" style="background-color: #fff3cd;">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-warning"><i class="bi bi-exclamation-circle me-1"></i> Geliştirilmesi Gerekenler</h6>
+                            <p class="mb-0" id="aiImprovements"></p>
+                        </div>
+                    </div>
+
+                    <!-- Eksik Kalan Şeyler -->
+                    <div class="card border-0 mb-3" style="background-color: #f8d7da;">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-danger"><i class="bi bi-x-circle me-1"></i> Eksik Kalan Şeyler</h6>
+                            <p class="mb-0" id="aiMissingParts"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="aiReviewFooter" style="display: none;">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-success" onclick="applyAIScore()">
+                    <i class="bi bi-check-lg me-1"></i> Bu Puanı Uygula
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        let lastReviewData = null;
+
+        function requestAIReview() {
+            var modal = new bootstrap.Modal(document.getElementById('aiReviewModal'));
+            document.getElementById('aiReviewLoading').classList.remove('d-none');
+            document.getElementById('aiReviewError').classList.add('d-none');
+            document.getElementById('aiReviewResult').classList.add('d-none');
+            document.getElementById('aiReviewFooter').style.display = 'none';
+            modal.show();
+
+            var provider = document.getElementById('aiProvider').value;
+            var submissionId = @Model.SubmissionId;
+
+            var formData = new FormData();
+            formData.append('submissionId', submissionId);
+            formData.append('provider', provider);
+
+            fetch('@Url.Action("AIReviewSubmission", "ClassGroups")', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('aiReviewLoading').classList.add('d-none');
+
+                if (data.success) {
+                    lastReviewData = data;
+                    document.getElementById('aiSuggestedScore').textContent = data.suggestedScore;
+                    document.getElementById('aiSummary').textContent = data.summary;
+                    document.getElementById('aiStrengths').textContent = data.strengths;
+                    document.getElementById('aiImprovements').textContent = data.improvements;
+                    document.getElementById('aiMissingParts').textContent = data.missingParts;
+                    document.getElementById('aiReviewResult').classList.remove('d-none');
+                    document.getElementById('aiReviewFooter').style.display = 'flex';
+                } else {
+                    document.getElementById('aiReviewErrorText').textContent = data.error || 'Bilinmeyen bir hata oluştu.';
+                    document.getElementById('aiReviewError').classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                document.getElementById('aiReviewLoading').classList.add('d-none');
+                document.getElementById('aiReviewErrorText').textContent = 'Bağlantı hatası: ' + error.message;
+                document.getElementById('aiReviewError').classList.remove('d-none');
+            });
+        }
+
+        function applyAIScore() {
+            if (lastReviewData) {
+                document.getElementById('scoreInput').value = lastReviewData.suggestedScore;
+
+                var note = '🤖 AI Değerlendirmesi:\n' + lastReviewData.summary;
+                if (lastReviewData.missingParts) {
+                    note += '\n\nEksikler: ' + lastReviewData.missingParts;
+                }
+                document.getElementById('instructorNoteInput').value = note;
+
+                var modal = bootstrap.Modal.getInstance(document.getElementById('aiReviewModal'));
+                modal.hide();
+            }
+        }
+    </script>
 }

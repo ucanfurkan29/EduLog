@@ -8,6 +8,8 @@ namespace EduLog.Web.ViewModels
         public int ClassGroupId { get; set; }
         public string AssignmentTitle { get; set; } = string.Empty;
         public string? AssignmentDescription { get; set; }
+        public string? ExpectedBehavior { get; set; }
+        public string? StarterCode { get; set; }
         public int MaxScore { get; set; }
 
         [Required(ErrorMessage = "Kod içeriği gereklidir.")]
@@ -45,6 +47,19 @@ namespace EduLog.Web.ViewModels
         public int CorrectCount { get; set; }
         public int TotalCount { get; set; }
         public int ClassGroupId { get; set; }
+        public List<QuizQuestionResultItem> QuestionResults { get; set; } = new();
+    }
+
+    public class QuizQuestionResultItem
+    {
+        public string QuestionText { get; set; } = string.Empty;
+        public string StudentAnswer { get; set; } = string.Empty;
+        public string CorrectAnswer { get; set; } = string.Empty;
+        public bool IsCorrect { get; set; }
+        public string OptionA { get; set; } = string.Empty;
+        public string OptionB { get; set; } = string.Empty;
+        public string OptionC { get; set; } = string.Empty;
+        public string OptionD { get; set; } = string.Empty;
     }
 
     public class CodeSubmissionResultViewModel
@@ -56,6 +71,14 @@ namespace EduLog.Web.ViewModels
         public string? InstructorNote { get; set; }
         public DateTime SubmittedAt { get; set; }
         public int ClassGroupId { get; set; }
+        public string? SubmittedContent { get; set; }
+
+        // AI Review fields
+        public string? Summary { get; set; }
+        public string? Strengths { get; set; }
+        public string? Improvements { get; set; }
+        public string? MissingParts { get; set; }
+        public bool HasAIReview => !string.IsNullOrWhiteSpace(Summary);
     }
 
     public class GradeSubmissionViewModel
@@ -67,6 +90,9 @@ namespace EduLog.Web.ViewModels
         public int MaxScore { get; set; }
         public DateTime SubmittedAt { get; set; }
         public int ClassGroupId { get; set; }
+        public string AssignmentType { get; set; } = string.Empty;
+        public string? AssignmentDescription { get; set; }
+        public string? ExpectedBehavior { get; set; }
 
         [Required(ErrorMessage = "Puan gereklidir.")]
         [Range(0, 1000, ErrorMessage = "Geçerli bir puan girin.")]
@@ -81,6 +107,7 @@ namespace EduLog.Web.ViewModels
     public class SubmissionListItemViewModel
     {
         public int Id { get; set; }
+        public int AssignmentId { get; set; }
         public string StudentName { get; set; } = string.Empty;
         public string AssignmentTitle { get; set; } = string.Empty;
         public string AssignmentType { get; set; } = string.Empty;

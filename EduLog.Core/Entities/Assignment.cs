@@ -23,6 +23,12 @@ namespace EduLog.Core.Entities
 
         public int MaxScore { get; set; }
 
+        [MaxLength(2000)]
+        public string? ExpectedBehavior { get; set; }
+
+        [MaxLength(4000)]
+        public string? StarterCode { get; set; }
+
         public DateTime? DueDate { get; set; }
 
         public SyllabusWeek Week { get; set; } = null!;

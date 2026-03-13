@@ -15,8 +15,25 @@
 
 @if (!string.IsNullOrWhiteSpace(Model.AssignmentDescription))
 {
-    <div class="alert alert-secondary">
-        <i class="bi bi-info-circle me-1"></i> @Model.AssignmentDescription
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 px-4">
+            <h6 class="fw-bold mb-0"><i class="bi bi-info-circle me-2"></i> Ödev Açıklaması</h6>
+        </div>
+        <div class="card-body p-4">
+            <p class="mb-0" style="white-space: pre-wrap;">@Model.AssignmentDescription</p>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ExpectedBehavior))
+{
+    <div class="card border-0 shadow-sm mb-4" style="border-left: 4px solid #0d6efd;">
+        <div class="card-header bg-white py-3 px-4">
+            <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-check2-circle me-2"></i> Beklenen Çıktı</h6>
+        </div>
+        <div class="card-body p-4">
+            <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit; background: #f0f7ff; padding: 1rem; border-radius: 0.5rem;">@Model.ExpectedBehavior</pre>
+        </div>
     </div>
 }
 
@@ -31,8 +48,8 @@
 
             <div class="mb-4">
                 <textarea asp-for="Content" class="form-control" rows="18"
-                          style="font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; background-color: #1e1e1e; color: #d4d4d4; tab-size: 4;"
-                          placeholder="// Kodunuzu buraya yazın..."></textarea>
+                          style="font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; background-color: #1e1e1e; color: #d4d4d4; tab-size: 4; min-height: 200px;"
+                          placeholder="Kodunuzu buraya yazın..."></textarea>
                 <span asp-validation-for="Content" class="text-danger small"></span>
             </div>
 

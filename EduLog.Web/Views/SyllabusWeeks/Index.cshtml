@@ -2,7 +2,7 @@
 @{
     var syllabus = (EduLog.Core.Entities.Syllabus)ViewBag.Syllabus;
     var courseName = (string)ViewBag.CourseName;
-    ViewData["Title"] = $"{syllabus.Title} — Haftalar";
+    ViewData["Title"] = $"{syllabus.Title} — Dersler";
     Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
 }
 
@@ -16,10 +16,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold mb-0">
-        <i class="bi bi-calendar-week me-2"></i> @syllabus.Title — Haftalar
+        <i class="bi bi-calendar-week me-2"></i> @syllabus.Title — Dersler
     </h3>
     <a asp-action="Create" asp-route-syllabusId="@syllabus.Id" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Hafta Ekle
+        <i class="bi bi-plus-lg me-1"></i> Ders Ekle
     </a>
 </div>
 
@@ -29,7 +29,7 @@
         <i class="bi bi-calendar-week text-muted" style="font-size: 4rem;"></i>
         <p class="text-muted mt-3 fs-5">Bu müfredata henüz hafta eklenmemiş.</p>
         <a asp-action="Create" asp-route-syllabusId="@syllabus.Id" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> İlk Haftayı Ekleyin
+            <i class="bi bi-plus-lg me-1"></i> İlk Dersi Ekleyin
         </a>
     </div>
 }
@@ -41,7 +41,7 @@ else
             <div class="col-md-6 col-lg-4">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3 px-4">
-                        <span class="badge bg-primary fs-6">Hafta @week.WeekNumber</span>
+                        <span class="badge bg-primary fs-6">Ders @week.WeekNumber</span>
                         <div class="dropdown">
                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
                                 <i class="bi bi-three-dots"></i>

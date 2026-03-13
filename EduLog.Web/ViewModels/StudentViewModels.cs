@@ -14,6 +14,8 @@ namespace EduLog.Web.ViewModels
         public string ClassName { get; set; } = string.Empty;
         public string CourseName { get; set; } = string.Empty;
         public int CurrentWeek { get; set; }
+        public int TotalScore { get; set; }
+        public int ClassRank { get; set; }
         public List<StudentWeekItemViewModel> OpenWeeks { get; set; } = new();
     }
 
@@ -21,6 +23,7 @@ namespace EduLog.Web.ViewModels
     {
         public int WeekNumber { get; set; }
         public string Topic { get; set; } = string.Empty;
+        public int WeekScore { get; set; }
     }
 
     public class StudentWeekDetailViewModel
@@ -54,5 +57,7 @@ namespace EduLog.Web.ViewModels
         public bool HasSubmission { get; set; }
         public int? SubmissionId { get; set; }
         public int? Score { get; set; }
+        public string? ExpectedBehavior { get; set; }
+        public string? StarterCode { get; set; }
     }
 }

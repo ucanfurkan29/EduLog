@@ -16,14 +16,14 @@
     </a>
 </div>
 
-<!-- JoinCode Card -->
+<!-- Top Info Cards -->
 <div class="row g-4 mb-4">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-0 shadow-sm text-center">
             <div class="card-body p-4">
                 <p class="text-muted small mb-2">Sınıf Katılım Kodu</p>
                 <div class="d-flex justify-content-center align-items-center gap-2">
-                    <span id="joinCodeText" class="font-monospace fw-bold text-dark" style="font-size: 2.5rem; letter-spacing: 6px;">@Model.JoinCode</span>
+                    <span id="joinCodeText" class="font-monospace fw-bold text-dark" style="font-size: 2.2rem; letter-spacing: 6px;">@Model.JoinCode</span>
                 </div>
                 <button class="btn btn-outline-primary btn-sm mt-3" onclick="copyJoinCode()">
                     <i class="bi bi-clipboard me-1"></i> Kopyala
@@ -33,10 +33,10 @@
     </div>
 
     <!-- Week Panel -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-0 shadow-sm text-center">
             <div class="card-body p-4">
-                <p class="text-muted small mb-2">Hafta Durumu</p>
+                <p class="text-muted small mb-2">Ders Durumu</p>
                 <div class="mb-2">
                     <span class="fs-1 fw-bold text-primary">@Model.CurrentWeek</span>
                     <span class="text-muted fs-5"> / @Model.MaxWeek</span>
@@ -45,15 +45,15 @@
                 {
                     <form asp-action="AdvanceWeek" asp-route-id="@Model.Id" method="post">
                         <button type="submit" class="btn btn-success btn-sm"
-                                onclick="return confirm('Hafta @(Model.CurrentWeek + 1) açılacak. Devam etmek istiyor musunuz?');">
-                            <i class="bi bi-unlock me-1"></i> Sonraki Haftayı Aç
+                                onclick="return confirm('Ders @(Model.CurrentWeek + 1) açılacak. Devam etmek istiyor musunuz?');">
+                            <i class="bi bi-unlock me-1"></i> Sonraki Dersi Aç
                         </button>
                     </form>
                 }
                 else
                 {
                     <span class="badge bg-success px-3 py-2">
-                        <i class="bi bi-check-circle me-1"></i> Tüm Haftalar Açık
+                        <i class="bi bi-check-circle me-1"></i> Tüm Dersler Açık
                     </span>
                 }
             </div>
@@ -61,7 +61,7 @@
     </div>
 
     <!-- Student Count -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card border-0 shadow-sm text-center">
             <div class="card-body p-4">
                 <p class="text-muted small mb-2">Kayıtlı Öğrenci</p>
@@ -70,9 +70,28 @@
             </div>
         </div>
     </div>
+
+    <!-- Ungraded CodeTask -->
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center">
+            <div class="card-body p-4">
+                <p class="text-muted small mb-2">Puanlanmamış Teslim</p>
+                @if (Model.UngradedCodeTaskCount > 0)
+                {
+                    <span class="fs-1 fw-bold text-danger">@Model.UngradedCodeTaskCount</span>
+                    <p class="mt-1"><span class="badge bg-danger px-3 py-2"><i class="bi bi-exclamation-triangle me-1"></i> Değerlendirme Bekliyor</span></p>
+                }
+                else
+                {
+                    <span class="fs-1 fw-bold text-success">0</span>
+                    <p class="mt-1"><span class="badge bg-success px-3 py-2"><i class="bi bi-check-circle me-1"></i> Hepsi Puanlandı</span></p>
+                }
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Tabs: Öğrenciler / Teslimler -->
+<!-- Tabs: Öğrenciler / Teslimler / Sıralama / Genel Bakış -->
 <ul class="nav nav-tabs mb-0" id="classDetailTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#studentsPane" type="button" role="tab">
@@ -82,6 +101,20 @@
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="submissions-tab" data-bs-toggle="tab" data-bs-target="#submissionsPane" type="button" role="tab">
             <i class="bi bi-inbox me-1"></i> Teslimler (@Model.Submissions.Count)
+            @if (Model.UngradedCodeTaskCount > 0)
+            {
+                <span class="badge bg-danger ms-1">@Model.UngradedCodeTaskCount</span>
+            }
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="leaderboard-tab" data-bs-toggle="tab" data-bs-target="#leaderboardPane" type="button" role="tab">
+            <i class="bi bi-trophy me-1"></i> Sıralama
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overviewPane" type="button" role="tab">
+            <i class="bi bi-bar-chart me-1"></i> Genel Bakış
         </button>
     </li>
 </ul>
@@ -197,6 +230,170 @@
                                                     <i class="bi bi-pencil me-1"></i> Düzenle
                                                 </a>
                                             }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Sıralama (Leaderboard) Tab -->
+    <div class="tab-pane fade" id="leaderboardPane" role="tabpanel">
+        <div class="card border-0 shadow-sm border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+            <div class="card-body">
+                @if (!Model.Leaderboard.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-trophy text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Henüz sıralama verisi yok.</p>
+                    </div>
+                }
+                else
+                {
+                    <!-- Podium: Top 3 -->
+                    @if (Model.Leaderboard.Count >= 1)
+                    {
+                        <div class="row justify-content-center mb-4 align-items-end">
+                            @if (Model.Leaderboard.Count >= 2)
+                            {
+                                <!-- 2nd Place -->
+                                <div class="col-md-3 text-center">
+                                    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #e8e8e8, #c0c0c0);">
+                                        <div class="card-body py-4">
+                                            <span style="font-size: 2.5rem;">🥈</span>
+                                            <h5 class="fw-bold mt-2 mb-1">@Model.Leaderboard[1].FullName</h5>
+                                            <span class="badge bg-dark fs-6 px-3 py-2">@Model.Leaderboard[1].TotalScore puan</span>
+                                            <p class="text-muted small mt-2 mb-0">@Model.Leaderboard[1].SubmissionCount teslim</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- 1st Place -->
+                            <div class="col-md-4 text-center">
+                                <div class="card border-0 shadow" style="background: linear-gradient(135deg, #fff8e1, #ffd54f);">
+                                    <div class="card-body py-5">
+                                        <span style="font-size: 3rem;">🥇</span>
+                                        <h4 class="fw-bold mt-2 mb-1">@Model.Leaderboard[0].FullName</h4>
+                                        <span class="badge bg-warning text-dark fs-5 px-3 py-2">@Model.Leaderboard[0].TotalScore puan</span>
+                                        <p class="text-muted small mt-2 mb-0">@Model.Leaderboard[0].SubmissionCount teslim</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (Model.Leaderboard.Count >= 3)
+                            {
+                                <!-- 3rd Place -->
+                                <div class="col-md-3 text-center">
+                                    <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #fff3e0, #ffab40);">
+                                        <div class="card-body py-4">
+                                            <span style="font-size: 2.5rem;">🥉</span>
+                                            <h5 class="fw-bold mt-2 mb-1">@Model.Leaderboard[2].FullName</h5>
+                                            <span class="badge bg-dark fs-6 px-3 py-2">@Model.Leaderboard[2].TotalScore puan</span>
+                                            <p class="text-muted small mt-2 mb-0">@Model.Leaderboard[2].SubmissionCount teslim</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <!-- Full Leaderboard Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4" style="width: 60px;">Sıra</th>
+                                    <th>Ad Soyad</th>
+                                    <th>Toplam Puan</th>
+                                    <th>Teslim Sayısı</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var entry in Model.Leaderboard)
+                                {
+                                    <tr class="@(entry.Rank <= 3 ? "table-warning fw-semibold" : "")">
+                                        <td class="ps-4">
+                                            @if (entry.Rank == 1)
+                                            {
+                                                <span>🥇</span>
+                                            }
+                                            else if (entry.Rank == 2)
+                                            {
+                                                <span>🥈</span>
+                                            }
+                                            else if (entry.Rank == 3)
+                                            {
+                                                <span>🥉</span>
+                                            }
+                                            else
+                                            {
+                                                @entry.Rank
+                                            }
+                                        </td>
+                                        <td>@entry.FullName</td>
+                                        <td><span class="badge bg-primary">@entry.TotalScore</span></td>
+                                        <td>@entry.SubmissionCount</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Genel Bakış Tab -->
+    <div class="tab-pane fade" id="overviewPane" role="tabpanel">
+        <div class="card border-0 shadow-sm border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+            <div class="card-body">
+                @if (!Model.WeekStats.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-bar-chart text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Henüz açılmış ders yok.</p>
+                    </div>
+                }
+                else
+                {
+                    <h5 class="fw-bold mb-3"><i class="bi bi-calendar-week me-2"></i> Ders Bazında Teslim Durumu</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Ders</th>
+                                    <th>Konu</th>
+                                    <th>Teslim Eden Öğrenci</th>
+                                    <th>Oran</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ws in Model.WeekStats)
+                                {
+                                    var ratio = Model.Students.Count > 0
+                                        ? (double)ws.StudentsSubmittedCount / Model.Students.Count * 100
+                                        : 0;
+                                    <tr>
+                                        <td class="ps-4">
+                                            <span class="badge bg-secondary">Ders @ws.WeekNumber</span>
+                                        </td>
+                                        <td>@ws.Topic</td>
+                                        <td>
+                                            <span class="fw-semibold">@ws.StudentsSubmittedCount</span>
+                                            <span class="text-muted">/ @Model.Students.Count</span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px; min-width: 120px;">
+                                                <div class="progress-bar @(ratio >= 80 ? "bg-success" : ratio >= 50 ? "bg-warning" : "bg-danger")"
+                                                     style="width: @((int)ratio)%;">
+                                                    @((int)ratio)%
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 }

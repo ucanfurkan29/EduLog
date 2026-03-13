@@ -13,15 +13,18 @@ namespace EduLog.Web.Controllers
     {
         private readonly IAssignmentService _assignmentService;
         private readonly IAnthropicService _anthropicService;
+        private readonly GeminiService _geminiService;
         private readonly AppDbContext _context;
 
         public AssignmentsController(
             IAssignmentService assignmentService,
             IAnthropicService anthropicService,
+            GeminiService geminiService,
             AppDbContext context)
         {
             _assignmentService = assignmentService;
             _anthropicService = anthropicService;
+            _geminiService = geminiService;
             _context = context;
         }
 
@@ -35,7 +38,7 @@ namespace EduLog.Web.Controllers
 
             if (week == null)
             {
-                TempData["Error"] = "Hafta bulunamadı.";
+                TempData["Error"] = "Ders bulunamadı.";
                 return RedirectToAction("Index", "Courses");
             }
 
@@ -111,7 +114,7 @@ namespace EduLog.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GenerateAI(int syllabusWeekId)
+        public async Task<IActionResult> GenerateAI(int syllabusWeekId, string provider = "anthropic", string type = "multipleChoice", int questionCount = 5)
         {
             var week = await _context.SyllabusWeeks
                 .Include(w => w.Syllabus).ThenInclude(s => s.Course)
@@ -119,47 +122,86 @@ namespace EduLog.Web.Controllers
 
             if (week == null)
             {
-                TempData["Error"] = "Hafta bulunamadı.";
+                TempData["Error"] = "Ders bulunamadı.";
                 return RedirectToAction("Index", "Courses");
             }
 
+            IAIQuestionService aiService = provider == "gemini"
+                ? _geminiService
+                : _anthropicService;
+
+            var providerName = provider == "gemini" ? "Gemini (Google)" : "Claude (Anthropic)";
+
             try
             {
-                var aiQuestions = await _anthropicService.GenerateQuestionsAsync(
-                    week.Topic, week.Notes, week.Examples);
-
-                if (!aiQuestions.Any())
+                if (type == "codeTask")
                 {
-                    TempData["Error"] = "AI soru üretemedi. Lütfen tekrar deneyin.";
-                    return RedirectToAction("Detail", "SyllabusWeeks", new { id = syllabusWeekId });
-                }
+                    var codeTask = await aiService.GenerateCodeTaskAsync(
+                        week.Topic, week.Notes, week.Examples);
 
-                var model = new AIPreviewViewModel
-                {
-                    SyllabusWeekId = syllabusWeekId,
-                    WeekTopic = week.Topic,
-                    CourseName = week.Syllabus.Course.Name,
-                    WeekNumber = week.WeekNumber,
-                    SyllabusId = week.SyllabusId,
-                    Title = $"Hafta {week.WeekNumber} - {week.Topic} Quiz",
-                    MaxScore = 100,
-                    Questions = aiQuestions.Select((q, i) => new QuestionViewModel
+                    if (string.IsNullOrWhiteSpace(codeTask.Title) && string.IsNullOrWhiteSpace(codeTask.Description))
                     {
-                        QuestionText = q.QuestionText,
-                        OptionA = q.OptionA,
-                        OptionB = q.OptionB,
-                        OptionC = q.OptionC,
-                        OptionD = q.OptionD,
-                        CorrectAnswer = q.CorrectAnswer.ToUpper(),
-                        OrderIndex = i
-                    }).ToList()
-                };
+                        TempData["Error"] = "AI kod ödevi üretemedi. Lütfen tekrar deneyin.";
+                        return RedirectToAction("Detail", "SyllabusWeeks", new { id = syllabusWeekId });
+                    }
 
-                return View("PreviewAI", model);
+                    var model = new AICodeTaskPreviewViewModel
+                    {
+                        SyllabusWeekId = syllabusWeekId,
+                        WeekTopic = week.Topic,
+                        CourseName = week.Syllabus.Course.Name,
+                        WeekNumber = week.WeekNumber,
+                        SyllabusId = week.SyllabusId,
+                        Provider = providerName,
+                        Title = codeTask.Title,
+                        Description = codeTask.Description,
+                        ExpectedBehavior = codeTask.ExpectedBehavior,
+                        StarterCode = codeTask.StarterCode,
+                        MaxScore = 100
+                    };
+
+                    return View("PreviewAICodeTask", model);
+                }
+                else
+                {
+                    // MultipleChoice — existing flow
+                    var aiQuestions = await aiService.GenerateQuestionsAsync(
+                        week.Topic, week.Notes, week.Examples, questionCount);
+
+                    if (!aiQuestions.Any())
+                    {
+                        TempData["Error"] = "AI soru üretemedi. Lütfen tekrar deneyin.";
+                        return RedirectToAction("Detail", "SyllabusWeeks", new { id = syllabusWeekId });
+                    }
+
+                    var model = new AIPreviewViewModel
+                    {
+                        SyllabusWeekId = syllabusWeekId,
+                        WeekTopic = week.Topic,
+                        CourseName = week.Syllabus.Course.Name,
+                        WeekNumber = week.WeekNumber,
+                        SyllabusId = week.SyllabusId,
+                        Provider = providerName,
+                        Title = $"Ders {week.WeekNumber} - {week.Topic} Quiz",
+                        MaxScore = 100,
+                        Questions = aiQuestions.Select((q, i) => new QuestionViewModel
+                        {
+                            QuestionText = q.QuestionText,
+                            OptionA = q.OptionA,
+                            OptionB = q.OptionB,
+                            OptionC = q.OptionC,
+                            OptionD = q.OptionD,
+                            CorrectAnswer = q.CorrectAnswer.ToUpper(),
+                            OrderIndex = i
+                        }).ToList()
+                    };
+
+                    return View("PreviewAI", model);
+                }
             }
             catch (Exception)
             {
-                TempData["Error"] = "AI servisiyle bağlantı kurulamadı. API anahtarınızı kontrol edin.";
+                TempData["Error"] = $"{providerName} servisiyle bağlantı kurulamadı. API anahtarınızı kontrol edin.";
                 return RedirectToAction("Detail", "SyllabusWeeks", new { id = syllabusWeekId });
             }
         }
@@ -207,6 +249,40 @@ namespace EduLog.Web.Controllers
 
             await _assignmentService.CreateAsync(assignment);
             TempData["Success"] = $"AI ile oluşturulan '{assignment.Title}' ödevi kaydedildi.";
+            return RedirectToAction("Detail", "SyllabusWeeks", new { id = model.SyllabusWeekId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveAICodeTask(AICodeTaskPreviewViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                var week = await _context.SyllabusWeeks
+                    .Include(w => w.Syllabus).ThenInclude(s => s.Course)
+                    .FirstOrDefaultAsync(w => w.Id == model.SyllabusWeekId);
+                model.WeekTopic = week?.Topic ?? "";
+                model.CourseName = week?.Syllabus?.Course?.Name ?? "";
+                model.WeekNumber = week?.WeekNumber ?? 0;
+                model.SyllabusId = week?.SyllabusId ?? 0;
+                return View("PreviewAICodeTask", model);
+            }
+
+            var assignment = new Assignment
+            {
+                SyllabusWeekId = model.SyllabusWeekId,
+                Title = model.Title,
+                Description = model.Description,
+                Type = "CodeTask",
+                MaxScore = model.MaxScore,
+                DueDate = model.DueDate,
+                IsAIGenerated = true,
+                ExpectedBehavior = model.ExpectedBehavior,
+                StarterCode = model.StarterCode
+            };
+
+            await _assignmentService.CreateAsync(assignment);
+            TempData["Success"] = $"AI ile oluşturulan '{assignment.Title}' kod ödevi kaydedildi.";
             return RedirectToAction("Detail", "SyllabusWeeks", new { id = model.SyllabusWeekId });
         }
 

@@ -8,14 +8,14 @@
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
         <li class="breadcrumb-item">@Model.CourseName</li>
-        <li class="breadcrumb-item"><a asp-controller="SyllabusWeeks" asp-action="Detail" asp-route-id="@Model.SyllabusWeekId">Hafta @Model.WeekNumber</a></li>
+        <li class="breadcrumb-item"><a asp-controller="SyllabusWeeks" asp-action="Detail" asp-route-id="@Model.SyllabusWeekId">Ders @Model.WeekNumber</a></li>
         <li class="breadcrumb-item active">AI Önizleme</li>
     </ol>
 </nav>
 
 <div class="alert alert-info d-flex align-items-center mb-4">
     <i class="bi bi-robot me-2 fs-5"></i>
-    <span>Aşağıdaki sorular <strong>AI (Claude)</strong> tarafından üretilmiştir. İnceleyip düzenledikten sonra onaylayarak kaydedebilirsiniz.</span>
+    <span>Aşağıdaki sorular <strong>@Model.Provider</strong> tarafından üretilmiştir. İnceleyip düzenledikten sonra onaylayarak kaydedebilirsiniz.</span>
 </div>
 
 <form asp-action="SaveAI" asp-controller="Assignments" method="post">

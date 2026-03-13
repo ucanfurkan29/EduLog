@@ -44,6 +44,9 @@ namespace EduLog.Web.ViewModels
         public int MaxWeek { get; set; }
         public List<StudentItemViewModel> Students { get; set; } = new();
         public List<SubmissionListItemViewModel> Submissions { get; set; } = new();
+        public List<LeaderboardEntryViewModel> Leaderboard { get; set; } = new();
+        public List<WeekSubmissionStatViewModel> WeekStats { get; set; } = new();
+        public int UngradedCodeTaskCount { get; set; }
     }
 
     public class StudentItemViewModel
@@ -51,5 +54,20 @@ namespace EduLog.Web.ViewModels
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public DateTime JoinedAt { get; set; }
+    }
+
+    public class LeaderboardEntryViewModel
+    {
+        public int Rank { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public int TotalScore { get; set; }
+        public int SubmissionCount { get; set; }
+    }
+
+    public class WeekSubmissionStatViewModel
+    {
+        public int WeekNumber { get; set; }
+        public string Topic { get; set; } = string.Empty;
+        public int StudentsSubmittedCount { get; set; }
     }
 }

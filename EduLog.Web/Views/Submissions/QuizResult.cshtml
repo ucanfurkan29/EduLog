@@ -2,53 +2,89 @@
 @{
     ViewData["Title"] = "Quiz Sonucu";
     Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+    double percentage = Model.MaxScore > 0 ? (double)Model.Score / Model.MaxScore * 100 : 0;
+    string scoreColor = percentage >= 80 ? "#198754" : percentage >= 50 ? "#ffc107" : "#dc3545";
+    string scoreBg = percentage >= 80 ? "rgba(25,135,84,0.1)" : percentage >= 50 ? "rgba(255,193,7,0.1)" : "rgba(220,53,69,0.1)";
 }
 
 <div class="row justify-content-center mt-4">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm text-center">
+    <div class="col-lg-9">
+        <!-- Score Circle -->
+        <div class="card border-0 shadow-sm text-center mb-4">
             <div class="card-body p-5">
-                @{
-                    double percentage = Model.MaxScore > 0 ? (double)Model.Score / Model.MaxScore * 100 : 0;
-                    string icon = percentage >= 70 ? "bi-emoji-smile text-success" :
-                                  percentage >= 50 ? "bi-emoji-neutral text-warning" :
-                                  "bi-emoji-frown text-danger";
-                }
-                <i class="bi @icon" style="font-size: 4rem;"></i>
-                <h3 class="fw-bold mt-3 mb-2">Quiz Tamamlandı!</h3>
-                <p class="text-muted mb-4">@Model.AssignmentTitle</p>
-
-                <div class="card bg-light border-0 mb-4 mx-auto" style="max-width: 450px;">
-                    <div class="card-body p-4">
-                        <div class="row text-center">
-                            <div class="col-6 border-end">
-                                <p class="small text-muted mb-1">Puanınız</p>
-                                <p class="fs-1 fw-bold text-primary mb-0">@Model.Score</p>
-                                <p class="small text-muted">/ @Model.MaxScore</p>
-                            </div>
-                            <div class="col-6">
-                                <p class="small text-muted mb-1">Doğru Cevap</p>
-                                <p class="fs-1 fw-bold text-success mb-0">@Model.CorrectCount</p>
-                                <p class="small text-muted">/ @Model.TotalCount soru</p>
-                            </div>
-                        </div>
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                     style="width: 130px; height: 130px; background: @scoreBg; border: 4px solid @scoreColor;">
+                    <div>
+                        <span class="fw-bold" style="font-size: 2rem; color: @scoreColor;">@Model.Score</span>
+                        <span class="text-muted" style="font-size: 1rem;">/@Model.MaxScore</span>
                     </div>
                 </div>
-
-                <div class="mb-4">
-                    <div class="progress" style="height: 12px;">
-                        <div class="progress-bar @(percentage >= 70 ? "bg-success" : percentage >= 50 ? "bg-warning" : "bg-danger")"
-                             role="progressbar" style="width: @percentage%">
-                        </div>
-                    </div>
-                    <p class="small text-muted mt-1">%@((int)percentage) başarı oranı</p>
-                </div>
-
-                <a asp-controller="StudentDashboard" asp-action="ClassDetail" asp-route-id="@Model.ClassGroupId"
-                   class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-left me-1"></i> Sınıfa Dön
-                </a>
+                <h4 class="fw-bold mb-2">Quiz Tamamlandı!</h4>
+                <p class="text-muted mb-3">@Model.AssignmentTitle</p>
+                <p class="fw-semibold mb-0" style="color: @scoreColor;">
+                    @Model.TotalCount sorudan @Model.CorrectCount tanesini doğru yanıtladın
+                </p>
             </div>
+        </div>
+
+        <!-- Question Results -->
+        @for (int i = 0; i < Model.QuestionResults.Count; i++)
+        {
+            var qr = Model.QuestionResults[i];
+            var borderColor = qr.IsCorrect ? "#198754" : "#dc3545";
+            <div class="card border-0 shadow-sm mb-3" style="border-left: 4px solid @borderColor !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h6 class="fw-bold mb-0">
+                            <span class="badge bg-primary me-2">@(i + 1)</span>
+                            @qr.QuestionText
+                        </h6>
+                        @if (qr.IsCorrect)
+                        {
+                            <span class="badge bg-success px-3 py-2">✓ Doğru</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger px-3 py-2">✗ Yanlış</span>
+                        }
+                    </div>
+                    <div class="d-flex flex-column gap-1">
+                        @foreach (var opt in new[] { ("A", qr.OptionA), ("B", qr.OptionB), ("C", qr.OptionC), ("D", qr.OptionD) })
+                        {
+                            var isStudentAnswer = string.Equals(opt.Item1, qr.StudentAnswer, StringComparison.OrdinalIgnoreCase);
+                            var isCorrectAnswer = string.Equals(opt.Item1, qr.CorrectAnswer, StringComparison.OrdinalIgnoreCase);
+
+                            var bgClass = "";
+                            var textStyle = "";
+                            if (isCorrectAnswer)
+                            {
+                                bgClass = "bg-success bg-opacity-10";
+                                textStyle = "color: #198754; font-weight: 600;";
+                            }
+                            else if (isStudentAnswer && !qr.IsCorrect)
+                            {
+                                bgClass = "bg-danger bg-opacity-10";
+                                textStyle = "color: #dc3545; text-decoration: line-through;";
+                            }
+
+                            <div class="p-2 px-3 rounded @bgClass" style="@textStyle">
+                                <strong>@opt.Item1)</strong> @opt.Item2
+                                @if (isCorrectAnswer && !qr.IsCorrect)
+                                {
+                                    <span class="badge bg-success ms-2">Doğru cevap</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="text-center mt-4">
+            <a asp-controller="StudentDashboard" asp-action="ClassDetail" asp-route-id="@Model.ClassGroupId"
+               class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-1"></i> Sınıfa Dön
+            </a>
         </div>
     </div>
 </div>

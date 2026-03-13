@@ -70,11 +70,11 @@ else
                             <i class="bi bi-calendar3 me-1"></i> @syllabus.CreatedAt.ToString("dd.MM.yyyy")
                         </p>
                         <div class="d-flex gap-3 text-muted small mb-3">
-                            <span><i class="bi bi-calendar-week me-1"></i> @syllabus.Weeks.Count hafta</span>
+                            <span><i class="bi bi-calendar-week me-1"></i> @syllabus.Weeks.Count ders</span>
                         </div>
                         <a asp-controller="SyllabusWeeks" asp-action="Index" asp-route-syllabusId="@syllabus.Id"
                            class="btn btn-outline-info btn-sm w-100">
-                            <i class="bi bi-calendar-week me-1"></i> Haftalara Git
+                            <i class="bi bi-calendar-week me-1"></i> Derslere Git
                         </a>
                     </div>
                 </div>

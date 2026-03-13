@@ -16,6 +16,8 @@ namespace EduLog.Web.Controllers
         private readonly ICourseService _courseService;
         private readonly ISyllabusService _syllabusService;
         private readonly ISubmissionService _submissionService;
+        private readonly IAnthropicService _anthropicService;
+        private readonly GeminiService _geminiService;
         private readonly AppDbContext _context;
 
         public ClassGroupsController(
@@ -23,12 +25,16 @@ namespace EduLog.Web.Controllers
             ICourseService courseService,
             ISyllabusService syllabusService,
             ISubmissionService submissionService,
+            IAnthropicService anthropicService,
+            GeminiService geminiService,
             AppDbContext context)
         {
             _classGroupService = classGroupService;
             _courseService = courseService;
             _syllabusService = syllabusService;
             _submissionService = submissionService;
+            _anthropicService = anthropicService;
+            _geminiService = geminiService;
             _context = context;
         }
 
@@ -113,6 +119,8 @@ namespace EduLog.Web.Controllers
             }
 
             var submissions = await _submissionService.GetByClassGroupIdAsync(id);
+            var leaderboard = await _classGroupService.GetLeaderboardAsync(id);
+            var overviewStats = await _classGroupService.GetClassOverviewStatsAsync(id);
 
             var model = new ClassGroupDetailViewModel
             {
@@ -132,6 +140,7 @@ namespace EduLog.Web.Controllers
                 Submissions = submissions.Select(s => new SubmissionListItemViewModel
                 {
                     Id = s.Id,
+                    AssignmentId = s.AssignmentId,
                     StudentName = s.User.FullName,
                     AssignmentTitle = s.Assignment.Title,
                     AssignmentType = s.Assignment.Type,
@@ -139,7 +148,21 @@ namespace EduLog.Web.Controllers
                     Score = s.Score,
                     MaxScore = s.Assignment.MaxScore,
                     SubmittedAt = s.SubmittedAt
-                }).ToList()
+                }).ToList(),
+                Leaderboard = leaderboard.Select(l => new LeaderboardEntryViewModel
+                {
+                    Rank = l.Rank,
+                    FullName = l.FullName,
+                    TotalScore = l.TotalScore,
+                    SubmissionCount = l.SubmissionCount
+                }).ToList(),
+                WeekStats = overviewStats.WeekStats.Select(w => new WeekSubmissionStatViewModel
+                {
+                    WeekNumber = w.WeekNumber,
+                    Topic = w.Topic,
+                    StudentsSubmittedCount = w.StudentsSubmittedCount
+                }).ToList(),
+                UngradedCodeTaskCount = overviewStats.UngradedCodeTaskCount
             };
 
             return View(model);
@@ -152,11 +175,11 @@ namespace EduLog.Web.Controllers
             var result = await _classGroupService.AdvanceWeekAsync(id);
             if (!result)
             {
-                TempData["Error"] = "Hafta açılamadı. Tüm haftalar zaten açılmış olabilir.";
+                TempData["Error"] = "Ders açılamadı. Tüm dersler zaten açılmış olabilir.";
             }
             else
             {
-                TempData["Success"] = "Sonraki hafta başarıyla açıldı.";
+                TempData["Success"] = "Sonraki ders başarıyla açıldı.";
             }
 
             return RedirectToAction(nameof(Detail), new { id });
@@ -206,10 +229,53 @@ namespace EduLog.Web.Controllers
                 SubmittedAt = submission.SubmittedAt,
                 ClassGroupId = submission.ClassGroupId,
                 Score = submission.Score ?? 0,
-                InstructorNote = submission.InstructorNote
+                InstructorNote = submission.InstructorNote,
+                AssignmentType = submission.Assignment.Type,
+                AssignmentDescription = submission.Assignment.Description,
+                ExpectedBehavior = submission.Assignment.ExpectedBehavior
             };
 
             return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AIReviewSubmission(int submissionId, string provider = "anthropic")
+        {
+            var submission = await _submissionService.GetByIdAsync(submissionId);
+            if (submission == null)
+                return Json(new { success = false, error = "Teslim bulunamadı." });
+
+            var assignment = submission.Assignment;
+            var week = await _context.SyllabusWeeks
+                .Include(w => w.Syllabus).ThenInclude(s => s.Course)
+                .FirstOrDefaultAsync(w => w.Id == assignment.SyllabusWeekId);
+
+            var topic = week?.Topic ?? "Bilinmiyor";
+            var taskDescription = $"{assignment.Description ?? assignment.Title}\nBeklenen Davranış: {assignment.ExpectedBehavior ?? "Belirtilmemiş"}";
+
+            IAIQuestionService aiService = provider == "gemini"
+                ? _geminiService
+                : _anthropicService;
+
+            try
+            {
+                var review = await aiService.ReviewCodeSubmissionAsync(
+                    topic, taskDescription, submission.Content, assignment.MaxScore);
+
+                return Json(new
+                {
+                    success = true,
+                    suggestedScore = review.SuggestedScore,
+                    summary = review.Summary,
+                    strengths = review.Strengths,
+                    improvements = review.Improvements,
+                    missingParts = review.MissingParts
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, error = $"AI değerlendirme başarısız: {ex.Message}" });
+            }
         }
 
         [HttpPost]

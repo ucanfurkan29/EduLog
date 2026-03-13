@@ -1,6 +1,6 @@
 @model EduLog.Web.ViewModels.SyllabusWeekDetailViewModel
 @{
-    ViewData["Title"] = $"Hafta {Model.Week.WeekNumber} — {Model.Week.Topic}";
+    ViewData["Title"] = $"Ders {Model.Week.WeekNumber} — {Model.Week.Topic}";
     Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
 }
 
@@ -9,17 +9,17 @@
         <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
         <li class="breadcrumb-item">@Model.CourseName</li>
         <li class="breadcrumb-item"><a asp-controller="SyllabusWeeks" asp-action="Index" asp-route-syllabusId="@Model.SyllabusId">@Model.SyllabusTitle</a></li>
-        <li class="breadcrumb-item active">Hafta @Model.Week.WeekNumber</li>
+        <li class="breadcrumb-item active">Ders @Model.Week.WeekNumber</li>
     </ol>
 </nav>
 
 <div class="row">
-    <!-- Sol: Hafta bilgileri -->
+    <!-- Sol: Ders bilgileri -->
     <div class="col-lg-7 mb-4">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
                 <h4 class="fw-bold mb-0">
-                    <span class="badge bg-primary me-2">Hafta @Model.Week.WeekNumber</span>
+                    <span class="badge bg-primary me-2">Ders @Model.Week.WeekNumber</span>
                     @Model.Week.Topic
                 </h4>
                 <a asp-action="Edit" asp-route-id="@Model.Week.Id" class="btn btn-outline-primary btn-sm">
@@ -51,7 +51,7 @@
                 }
                 @if (string.IsNullOrEmpty(Model.Week.Examples) && string.IsNullOrEmpty(Model.Week.Notes))
                 {
-                    <p class="text-muted">Bu hafta için henüz örnek veya not eklenmemiş.</p>
+                    <p class="text-muted">Bu ders için henüz örnek veya not eklenmemiş.</p>
                 }
             </div>
         </div>
@@ -156,12 +156,32 @@
                class="btn btn-primary btn-sm">
                 <i class="bi bi-plus me-1"></i> Ödev Ekle
             </a>
-            <form asp-controller="Assignments" asp-action="GenerateAI" method="post" class="d-inline">
+            <form asp-controller="Assignments" asp-action="GenerateAI" method="post" class="d-inline-flex align-items-center gap-2">
                 <input type="hidden" name="syllabusWeekId" value="@Model.Week.Id" />
+                <select name="provider" class="form-select form-select-sm" style="width: auto;">
+                    <option value="anthropic">Claude (Anthropic)</option>
+                    <option value="gemini">Gemini (Google)</option>
+                </select>
+                <select name="type" class="form-select form-select-sm" style="width: auto;" id="aiTypeSelect">
+                    <option value="multipleChoice">Çoktan Seçmeli</option>
+                    <option value="codeTask">Kod Ödevi</option>
+                </select>
+                <select name="questionCount" class="form-select form-select-sm" style="width: auto;" id="questionCountSelect">
+                    <option value="3">3 Soru</option>
+                    <option value="5" selected>5 Soru</option>
+                    <option value="8">8 Soru</option>
+                    <option value="10">10 Soru</option>
+                </select>
                 <button type="submit" class="btn btn-outline-info btn-sm">
-                    <i class="bi bi-robot me-1"></i> AI ile Ödev Üret
+                    <i class="bi bi-robot me-1"></i> AI ile Üret
                 </button>
             </form>
+            <script>
+                document.getElementById('aiTypeSelect').addEventListener('change', function () {
+                    document.getElementById('questionCountSelect').style.display =
+                        this.value === 'multipleChoice' ? '' : 'none';
+                });
+            </script>
         </div>
     </div>
     <div class="card-body p-0">

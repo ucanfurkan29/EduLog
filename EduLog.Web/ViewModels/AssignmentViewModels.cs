@@ -103,6 +103,7 @@ namespace EduLog.Web.ViewModels
         public string CourseName { get; set; } = string.Empty;
         public int WeekNumber { get; set; }
         public int SyllabusId { get; set; }
+        public string Provider { get; set; } = "Claude (Anthropic)";
 
         [Required(ErrorMessage = "Başlık gereklidir.")]
         [MaxLength(300)]
@@ -122,5 +123,39 @@ namespace EduLog.Web.ViewModels
         public DateTime? DueDate { get; set; }
 
         public List<QuestionViewModel> Questions { get; set; } = new();
+    }
+
+    public class AICodeTaskPreviewViewModel
+    {
+        public int SyllabusWeekId { get; set; }
+        public string WeekTopic { get; set; } = string.Empty;
+        public string CourseName { get; set; } = string.Empty;
+        public int WeekNumber { get; set; }
+        public int SyllabusId { get; set; }
+        public string Provider { get; set; } = "Claude (Anthropic)";
+
+        [Required(ErrorMessage = "Başlık gereklidir.")]
+        [MaxLength(300)]
+        [Display(Name = "Başlık")]
+        public string Title { get; set; } = string.Empty;
+
+        [MaxLength(2000)]
+        [Display(Name = "Açıklama (Ödev Yönergesi)")]
+        public string? Description { get; set; }
+
+        [MaxLength(2000)]
+        [Display(Name = "Beklenen Davranış / Çıktı")]
+        public string? ExpectedBehavior { get; set; }
+
+        [Display(Name = "Başlangıç Kodu")]
+        public string? StarterCode { get; set; }
+
+        [Required(ErrorMessage = "Maksimum puan gereklidir.")]
+        [Range(1, 1000)]
+        [Display(Name = "Maksimum Puan")]
+        public int MaxScore { get; set; } = 100;
+
+        [Display(Name = "Son Teslim Tarihi")]
+        public DateTime? DueDate { get; set; }
     }
 }

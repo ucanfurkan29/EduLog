@@ -61,6 +61,8 @@ namespace EduLog.Web.Controllers
                 .Include(cg => cg.Course)
                 .Include(cg => cg.Syllabus)
                     .ThenInclude(s => s.Weeks.OrderBy(w => w.WeekNumber))
+                        .ThenInclude(w => w.Assignments)
+                .Include(cg => cg.Enrollments)
                 .FirstOrDefaultAsync(cg => cg.Id == id);
 
             if (classGroup == null)
@@ -69,12 +71,45 @@ namespace EduLog.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Get all scored submissions for this class
+            var allSubmissions = await _context.Submissions
+                .Where(s => s.ClassGroupId == id && s.Score.HasValue)
+                .ToListAsync();
+
+            // Current user's total score
+            var myTotalScore = allSubmissions
+                .Where(s => s.UserId == user.Id)
+                .Sum(s => s.Score ?? 0);
+
+            // Calculate class rank
+            var allStudentIds = classGroup.Enrollments.Select(e => e.UserId).ToList();
+            var studentScores = allStudentIds.Select(sid => new
+            {
+                UserId = sid,
+                TotalScore = allSubmissions.Where(s => s.UserId == sid).Sum(s => s.Score ?? 0)
+            })
+            .OrderByDescending(x => x.TotalScore)
+            .ToList();
+
+            var classRank = studentScores.FindIndex(x => x.UserId == user.Id) + 1;
+            if (classRank == 0) classRank = studentScores.Count + 1; // not found edge case
+
+            // Per-week score for current user
             var openWeeks = classGroup.Syllabus.Weeks
                 .Where(w => w.WeekNumber <= classGroup.CurrentWeek)
-                .Select(w => new StudentWeekItemViewModel
+                .Select(w =>
                 {
-                    WeekNumber = w.WeekNumber,
-                    Topic = w.Topic
+                    var weekAssignmentIds = w.Assignments.Select(a => a.Id).ToList();
+                    var weekScore = allSubmissions
+                        .Where(s => s.UserId == user.Id && weekAssignmentIds.Contains(s.AssignmentId))
+                        .Sum(s => s.Score ?? 0);
+
+                    return new StudentWeekItemViewModel
+                    {
+                        WeekNumber = w.WeekNumber,
+                        Topic = w.Topic,
+                        WeekScore = weekScore
+                    };
                 }).ToList();
 
             var model = new StudentClassDetailViewModel
@@ -83,6 +118,8 @@ namespace EduLog.Web.Controllers
                 ClassName = classGroup.Name,
                 CourseName = classGroup.Course.Name,
                 CurrentWeek = classGroup.CurrentWeek,
+                TotalScore = myTotalScore,
+                ClassRank = classRank,
                 OpenWeeks = openWeeks
             };
 
@@ -123,14 +160,14 @@ namespace EduLog.Web.Controllers
             // Check if week is open
             if (weekNumber > classGroup.CurrentWeek)
             {
-                TempData["Error"] = "Bu hafta henüz açılmamış.";
+                TempData["Error"] = "Bu ders henüz açılmamış.";
                 return RedirectToAction(nameof(ClassDetail), new { id = classGroupId });
             }
 
             var week = classGroup.Syllabus.Weeks.FirstOrDefault(w => w.WeekNumber == weekNumber);
             if (week == null)
             {
-                TempData["Error"] = "Hafta bulunamadı.";
+                TempData["Error"] = "Ders bulunamadı.";
                 return RedirectToAction(nameof(ClassDetail), new { id = classGroupId });
             }
 
@@ -168,7 +205,8 @@ namespace EduLog.Web.Controllers
                         DueDate = a.DueDate,
                         HasSubmission = sub != null,
                         SubmissionId = sub?.Id,
-                        Score = sub?.Score
+                        Score = sub?.Score,
+                        ExpectedBehavior = a.ExpectedBehavior
                     };
                 }).ToList()
             };

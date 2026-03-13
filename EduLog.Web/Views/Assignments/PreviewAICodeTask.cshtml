@@ -1,0 +1,99 @@
+@model EduLog.Web.ViewModels.AICodeTaskPreviewViewModel
+@{
+    ViewData["Title"] = "AI Önizleme — Kod Ödevi";
+    Layout = "~/Views/Shared/_LayoutInstructor.cshtml";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Courses" asp-action="Index">Dersler</a></li>
+        <li class="breadcrumb-item">@Model.CourseName</li>
+        <li class="breadcrumb-item"><a asp-controller="SyllabusWeeks" asp-action="Detail" asp-route-id="@Model.SyllabusWeekId">Ders @Model.WeekNumber</a></li>
+        <li class="breadcrumb-item active">AI Kod Ödevi Önizleme</li>
+    </ol>
+</nav>
+
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="bi bi-robot me-2 fs-5"></i>
+    <span>Aşağıdaki kod ödevi <strong>@Model.Provider</strong> tarafından üretilmiştir. İnceleyip düzenledikten sonra onaylayarak kaydedebilirsiniz.</span>
+</div>
+
+<form asp-action="SaveAICodeTask" asp-controller="Assignments" method="post">
+    <input type="hidden" asp-for="SyllabusWeekId" />
+    <input type="hidden" asp-for="SyllabusId" />
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 px-4">
+            <h4 class="fw-bold mb-0"><i class="bi bi-gear me-2"></i> Ödev Bilgileri</h4>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Title" class="form-label fw-semibold"></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="MaxScore" class="form-label fw-semibold"></label>
+                    <input asp-for="MaxScore" class="form-control" type="number" min="1" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="DueDate" class="form-label fw-semibold"></label>
+                    <input asp-for="DueDate" class="form-control" type="datetime-local" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 px-4">
+            <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-text me-2"></i> Ödev Yönergesi</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-semibold"></label>
+                <textarea asp-for="Description" class="form-control" rows="5"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3 px-4">
+            <h5 class="fw-bold mb-0"><i class="bi bi-check2-circle me-2"></i> Beklenen Davranış / Çıktı</h5>
+        </div>
+        <div class="card-body p-4">
+            <textarea asp-for="ExpectedBehavior" class="form-control" rows="4" placeholder="Programın beklenen çıktısı veya davranışı..."></textarea>
+            <small class="form-text text-muted">Bu alan AI kod değerlendirmesinde referans olarak kullanılacaktır.</small>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.StarterCode))
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 px-4">
+                <h5 class="fw-bold mb-0"><i class="bi bi-code-slash me-2"></i> Başlangıç Kodu</h5>
+            </div>
+            <div class="card-body p-4">
+                <textarea asp-for="StarterCode" class="form-control font-monospace" rows="6" style="font-size: 14px;"></textarea>
+                <small class="form-text text-muted">Öğrenciye gösterilecek başlangıç kodu. Boş bırakılabilir.</small>
+            </div>
+        </div>
+    }
+    else
+    {
+        <input type="hidden" asp-for="StarterCode" />
+    }
+
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check-circle me-1"></i> Onayla ve Kaydet
+        </button>
+        <a asp-controller="SyllabusWeeks" asp-action="Detail" asp-route-id="@Model.SyllabusWeekId" class="btn btn-outline-secondary btn-lg">
+            İptal
+        </a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
