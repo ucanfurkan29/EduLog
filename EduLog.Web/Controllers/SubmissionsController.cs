@@ -55,7 +55,8 @@ namespace EduLog.Web.Controllers
                     InstructorNote = existing.InstructorNote,
                     SubmittedAt = existing.SubmittedAt,
                     ClassGroupId = classGroupId,
-                    SubmittedContent = existing.Content
+                    SubmittedContent = existing.Content,
+                    ProgrammingLanguage = assignment.Week?.Syllabus?.Course?.ProgrammingLanguage ?? "csharp"
                 });
             }
 
@@ -68,6 +69,7 @@ namespace EduLog.Web.Controllers
                 ExpectedBehavior = assignment.ExpectedBehavior,
                 StarterCode = assignment.StarterCode,
                 MaxScore = assignment.MaxScore,
+                ProgrammingLanguage = assignment.Week?.Syllabus?.Course?.ProgrammingLanguage ?? "csharp",
                 Content = assignment.StarterCode ?? ""
             };
 
@@ -120,7 +122,8 @@ namespace EduLog.Web.Controllers
                 Score = null,
                 SubmittedAt = submission.SubmittedAt,
                 ClassGroupId = model.ClassGroupId,
-                SubmittedContent = model.Content
+                SubmittedContent = model.Content,
+                ProgrammingLanguage = assignmentForResult?.Week?.Syllabus?.Course?.ProgrammingLanguage ?? "csharp"
             });
         }
 

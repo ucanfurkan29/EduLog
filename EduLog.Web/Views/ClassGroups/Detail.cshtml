@@ -167,6 +167,27 @@
     <!-- Teslimler Tab -->
     <div class="tab-pane fade" id="submissionsPane" role="tabpanel">
         <div class="card border-0 shadow-sm border-top-0" style="border-top-left-radius: 0; border-top-right-radius: 0;">
+            @{
+                var ungradedCodeTasks = Model.Submissions.Where(s => s.AssignmentType == "CodeTask" && !s.Score.HasValue).ToList();
+            }
+            @if (ungradedCodeTasks.Any())
+            {
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+                    <span class="text-muted small">
+                        <i class="bi bi-exclamation-circle me-1"></i>
+                        <strong>@ungradedCodeTasks.Count</strong> adet puanlanmamış kod teslimi var
+                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <select id="bulkAiProvider" class="form-select form-select-sm" style="width: auto;">
+                            <option value="anthropic">Claude</option>
+                            <option value="gemini" selected>Gemini</option>
+                        </select>
+                        <button type="button" class="btn btn-warning btn-sm fw-semibold" id="btnBulkAIReview" onclick="startBulkAIReview()">
+                            <i class="bi bi-robot me-1"></i> Tümünü AI ile İncele ve Kaydet
+                        </button>
+                    </div>
+                </div>
+            }
             <div class="card-body p-0">
                 @if (!Model.Submissions.Any())
                 {
@@ -406,6 +427,91 @@
     </div>
 </div>
 
+<!-- Toplu AI İnceleme Modal -->
+<div class="modal fade" id="bulkAIReviewModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-robot me-2"></i> Toplu AI İnceleme
+                </h5>
+            </div>
+            <div class="modal-body">
+                <!-- Loading -->
+                <div id="bulkLoading">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-warning" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                        <p class="text-muted mt-3 mb-1">Tüm teslimler AI ile inceleniyor, lütfen bekleyin...</p>
+                        <p class="text-muted small">Bu işlem birkaç dakika sürebilir.</p>
+                    </div>
+                    <div class="progress mx-4" style="height: 8px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" id="bulkProgressBar" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <!-- Error -->
+                <div id="bulkError" class="d-none">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <span id="bulkErrorText"></span>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div id="bulkResults" class="d-none">
+                    <div class="row g-3 mb-4">
+                        <div class="col-4 text-center">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body py-3">
+                                    <p class="text-muted small mb-1">Toplam</p>
+                                    <span class="fs-3 fw-bold" id="bulkTotalCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="card border-0" style="background-color: #d4edda;">
+                                <div class="card-body py-3">
+                                    <p class="text-muted small mb-1">Başarılı</p>
+                                    <span class="fs-3 fw-bold text-success" id="bulkSuccessCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="card border-0" style="background-color: #f8d7da;">
+                                <div class="card-body py-3">
+                                    <p class="text-muted small mb-1">Başarısız</p>
+                                    <span class="fs-3 fw-bold text-danger" id="bulkFailCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">Öğrenci</th>
+                                    <th>Ödev</th>
+                                    <th>Puan</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkResultsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="bulkFooter" style="display: none;">
+                <button type="button" class="btn btn-primary" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Sayfayı Yenile
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         function copyJoinCode() {
@@ -421,6 +527,68 @@
                     btn.classList.remove('btn-success');
                     btn.classList.add('btn-outline-primary');
                 }, 2000);
+            });
+        }
+
+        function startBulkAIReview() {
+            var modal = new bootstrap.Modal(document.getElementById('bulkAIReviewModal'));
+            document.getElementById('bulkLoading').classList.remove('d-none');
+            document.getElementById('bulkError').classList.add('d-none');
+            document.getElementById('bulkResults').classList.add('d-none');
+            document.getElementById('bulkFooter').style.display = 'none';
+            modal.show();
+
+            var provider = document.getElementById('bulkAiProvider').value;
+            var formData = new FormData();
+            formData.append('classGroupId', @Model.Id);
+            formData.append('provider', provider);
+
+            fetch('@Url.Action("BulkAIReviewSubmissions", "ClassGroups")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('bulkLoading').classList.add('d-none');
+
+                if (data.success && data.results) {
+                    document.getElementById('bulkTotalCount').textContent = data.totalCount || 0;
+                    document.getElementById('bulkSuccessCount').textContent = data.successCount || 0;
+                    document.getElementById('bulkFailCount').textContent = data.failCount || 0;
+
+                    var tbody = document.getElementById('bulkResultsBody');
+                    tbody.innerHTML = '';
+
+                    if (data.results.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Puanlanmamış kod teslimi bulunamadı.</td></tr>';
+                    } else {
+                        data.results.forEach(function(r) {
+                            var statusBadge = r.success
+                                ? '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Başarılı</span>'
+                                : '<span class="badge bg-danger" title="' + (r.error || '') + '"><i class="bi bi-x-circle me-1"></i>Hata</span>';
+                            var scoreText = r.success ? (r.score + ' / ' + r.maxScore) : '-';
+                            tbody.innerHTML += '<tr>' +
+                                '<td class="ps-3 fw-semibold">' + r.studentName + '</td>' +
+                                '<td>' + r.assignmentTitle + '</td>' +
+                                '<td>' + scoreText + '</td>' +
+                                '<td>' + statusBadge + '</td>' +
+                                '</tr>';
+                        });
+                    }
+
+                    document.getElementById('bulkResults').classList.remove('d-none');
+                    document.getElementById('bulkFooter').style.display = 'flex';
+                } else {
+                    document.getElementById('bulkErrorText').textContent = data.error || data.message || 'Bilinmeyen bir hata oluştu.';
+                    document.getElementById('bulkError').classList.remove('d-none');
+                    document.getElementById('bulkFooter').style.display = 'flex';
+                }
+            })
+            .catch(error => {
+                document.getElementById('bulkLoading').classList.add('d-none');
+                document.getElementById('bulkErrorText').textContent = 'Bağlantı hatası: ' + error.message;
+                document.getElementById('bulkError').classList.remove('d-none');
+                document.getElementById('bulkFooter').style.display = 'flex';
             });
         }
     </script>

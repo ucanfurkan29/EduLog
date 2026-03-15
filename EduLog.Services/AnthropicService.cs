@@ -77,9 +77,9 @@ namespace EduLog.Services
                 var questions = JsonSerializer.Deserialize<List<AIGeneratedQuestion>>(cleaned, options);
                 return questions ?? new List<AIGeneratedQuestion>();
             }
-            catch (Exception)
+            catch (JsonException ex)
             {
-                return new List<AIGeneratedQuestion>();
+                throw new AIServiceException(AIErrorType.JsonParseError, null, ex);
             }
         }
 
@@ -95,9 +95,9 @@ namespace EduLog.Services
                 var codeTask = JsonSerializer.Deserialize<AIGeneratedCodeTask>(cleaned, options);
                 return codeTask ?? new AIGeneratedCodeTask();
             }
-            catch (Exception)
+            catch (JsonException ex)
             {
-                return new AIGeneratedCodeTask();
+                throw new AIServiceException(AIErrorType.JsonParseError, null, ex);
             }
         }
 
@@ -113,9 +113,9 @@ namespace EduLog.Services
                 var review = JsonSerializer.Deserialize<AICodeReview>(cleaned, options);
                 return review ?? new AICodeReview();
             }
-            catch (Exception)
+            catch (JsonException ex)
             {
-                return new AICodeReview();
+                throw new AIServiceException(AIErrorType.JsonParseError, null, ex);
             }
         }
 
@@ -138,8 +138,31 @@ namespace EduLog.Services
             request.Headers.Add("x-api-key", _apiKey);
             request.Headers.Add("anthropic-version", "2023-06-01");
 
-            var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+            HttpResponseMessage response;
+            try
+            {
+                response = await _httpClient.SendAsync(request);
+            }
+            catch (TaskCanceledException ex)
+            {
+                throw new AIServiceException(AIErrorType.Timeout, null, ex);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new AIServiceException(AIErrorType.NetworkError, null, ex);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorType = (int)response.StatusCode switch
+                {
+                    401 => AIErrorType.AuthenticationError,
+                    429 => AIErrorType.ApiLimitExceeded,
+                    >= 500 => AIErrorType.NetworkError,
+                    _ => AIErrorType.Unknown
+                };
+                throw new AIServiceException(errorType, $"Anthropic API returned {(int)response.StatusCode}");
+            }
 
             var responseJson = await response.Content.ReadAsStringAsync();
 

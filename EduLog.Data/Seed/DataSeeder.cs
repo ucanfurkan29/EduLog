@@ -46,6 +46,36 @@ namespace EduLog.Data.Seed
                     await userManager.AddToRoleAsync(instructor, "Instructor");
                 }
             }
+
+            // Seed student users
+            var students = new[]
+            {
+                new { Email = "ogrenci@edulog.com", FullName = "Öğrenci Demo" },
+                new { Email = "ogrenci1@edulog.com", FullName = "Ali Yılmaz" },
+                new { Email = "ogrenci2@edulog.com", FullName = "Ayşe Demir" },
+                new { Email = "ogrenci3@edulog.com", FullName = "Mehmet Kaya" },
+                new { Email = "ogrenci4@edulog.com", FullName = "Zeynep Çelik" },
+            };
+
+            foreach (var s in students)
+            {
+                if (await userManager.FindByEmailAsync(s.Email) == null)
+                {
+                    var student = new ApplicationUser
+                    {
+                        UserName = s.Email,
+                        Email = s.Email,
+                        FullName = s.FullName,
+                        EmailConfirmed = true
+                    };
+
+                    var result = await userManager.CreateAsync(student, "Admin123!");
+                    if (result.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(student, "Student");
+                    }
+                }
+            }
         }
     }
 }

@@ -38,7 +38,8 @@ namespace EduLog.Web.Controllers
             var course = new Course
             {
                 Name = model.Name,
-                Description = model.Description
+                Description = model.Description,
+                ProgrammingLanguage = model.ProgrammingLanguage
             };
 
             await _courseService.CreateAsync(course);
@@ -60,7 +61,8 @@ namespace EduLog.Web.Controllers
             {
                 Id = course.Id,
                 Name = course.Name,
-                Description = course.Description
+                Description = course.Description,
+                ProgrammingLanguage = course.ProgrammingLanguage
             };
             return View(model);
         }
@@ -81,6 +83,7 @@ namespace EduLog.Web.Controllers
 
             course.Name = model.Name;
             course.Description = model.Description;
+            course.ProgrammingLanguage = model.ProgrammingLanguage;
             await _courseService.UpdateAsync(course);
 
             TempData["Success"] = $"'{course.Name}' dersi güncellendi.";

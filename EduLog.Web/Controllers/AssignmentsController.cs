@@ -199,6 +199,11 @@ namespace EduLog.Web.Controllers
                     return View("PreviewAI", model);
                 }
             }
+            catch (AIServiceException aiEx)
+            {
+                TempData["Error"] = aiEx.UserFriendlyMessage;
+                return RedirectToAction("Detail", "SyllabusWeeks", new { id = syllabusWeekId });
+            }
             catch (Exception)
             {
                 TempData["Error"] = $"{providerName} servisiyle bağlantı kurulamadı. API anahtarınızı kontrol edin.";

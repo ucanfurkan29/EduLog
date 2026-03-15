@@ -38,40 +38,128 @@
 }
 
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 px-4">
+    <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
         <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-code me-2"></i> Kodunuzu Yazın</h5>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnToggleTheme" title="Tema Değiştir">
+                <i class="bi bi-moon-stars me-1"></i> Tema
+            </button>
+        </div>
     </div>
-    <div class="card-body p-4">
-        <form asp-action="SubmitCode" method="post">
+    <div class="card-body p-0">
+        <form asp-action="SubmitCode" method="post" id="codeForm">
             <input type="hidden" asp-for="AssignmentId" />
             <input type="hidden" asp-for="ClassGroupId" />
+            <input type="hidden" asp-for="ProgrammingLanguage" />
 
-            <div class="mb-4">
-                <textarea asp-for="Content" class="form-control" rows="18"
-                          style="font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; background-color: #1e1e1e; color: #d4d4d4; tab-size: 4; min-height: 200px;"
-                          placeholder="Kodunuzu buraya yazın..."></textarea>
-                <span asp-validation-for="Content" class="text-danger small"></span>
+            <div id="codeEditorContainer" style="border-bottom: 1px solid #dee2e6;"></div>
+            <textarea asp-for="Content" id="codeContent" style="display: none;"></textarea>
+            <span asp-validation-for="Content" class="text-danger small px-4"></span>
+
+            <div class="p-3">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-send me-1"></i> Teslim Et
+                </button>
             </div>
-
-            <button type="submit" class="btn btn-success btn-lg">
-                <i class="bi bi-send me-1"></i> Teslim Et
-            </button>
         </form>
     </div>
 </div>
 
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/monokai.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/default.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.css" />
+    <style>
+        .CodeMirror {
+            height: 450px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+    </style>
+}
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+    <!-- Language modes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/sql/sql.min.js"></script>
+    <!-- Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/selection/active-line.min.js"></script>
+    <!-- Hint / Autocomplete addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/javascript-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/sql-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/css-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/html-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/xml-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/hint/anyword-hint.min.js"></script>
+
     <script>
-        // Tab key support in textarea
-        document.querySelector('textarea[name="Content"]').addEventListener('keydown', function (e) {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                var start = this.selectionStart;
-                var end = this.selectionEnd;
-                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 4;
-            }
-        });
+        (function () {
+            var langMap = {
+                'csharp': 'text/x-csharp',
+                'python': 'python',
+                'javascript': 'javascript',
+                'java': 'text/x-java',
+                'cpp': 'text/x-c++src',
+                'html': 'htmlmixed',
+                'css': 'css',
+                'sql': 'sql'
+            };
+
+            var lang = '@Model.ProgrammingLanguage';
+            var mode = langMap[lang] || 'text/plain';
+            var isDark = true;
+
+            var editor = CodeMirror(document.getElementById('codeEditorContainer'), {
+                value: document.getElementById('codeContent').value || '',
+                mode: mode,
+                theme: 'monokai',
+                lineNumbers: true,
+                matchBrackets: true,
+                autoCloseBrackets: true,
+                styleActiveLine: true,
+                indentUnit: 4,
+                tabSize: 4,
+                indentWithTabs: false,
+                lineWrapping: true,
+                extraKeys: {
+                    'Ctrl-Space': 'autocomplete',
+                    'Tab': function (cm) {
+                        cm.replaceSelection('    ', 'end');
+                    }
+                }
+            });
+
+            // Auto-trigger autocomplete while typing
+            editor.on('inputRead', function (cm, event) {
+                if (!cm.state.completionActive && event.text[0] && event.text[0].match(/[\w.]/)) {
+                    CodeMirror.commands.autocomplete(cm, null, { completeSingle: false });
+                }
+            });
+
+            // Sync editor content to hidden textarea on form submit
+            document.getElementById('codeForm').addEventListener('submit', function () {
+                document.getElementById('codeContent').value = editor.getValue();
+            });
+
+            // Theme toggle
+            document.getElementById('btnToggleTheme').addEventListener('click', function () {
+                isDark = !isDark;
+                editor.setOption('theme', isDark ? 'monokai' : 'default');
+                var icon = this.querySelector('i');
+                icon.className = isDark ? 'bi bi-moon-stars me-1' : 'bi bi-sun me-1';
+            });
+        })();
     </script>
 }

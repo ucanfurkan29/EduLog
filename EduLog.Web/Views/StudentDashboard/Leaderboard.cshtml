@@ -1,0 +1,181 @@
+@model EduLog.Web.ViewModels.LeaderboardViewModel
+@{
+    ViewData["Title"] = "Sıralama";
+    Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-trophy me-2"></i> Sıralama
+        </h3>
+        <p class="text-muted mb-0">Sınıfınızdaki öğrencilerin puan sıralamasını görüntüleyin.</p>
+    </div>
+</div>
+
+@if (!Model.AvailableClasses.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+            <p class="text-muted mt-3 mb-0">Henüz herhangi bir sınıfa kayıtlı değilsiniz.</p>
+        </div>
+    </div>
+}
+else
+{
+    <!-- Class Selector -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="get" asp-action="Leaderboard" class="d-flex align-items-center gap-3">
+                <label class="fw-semibold text-nowrap mb-0">
+                    <i class="bi bi-funnel me-1"></i> Sınıf:
+                </label>
+                <select name="classGroupId" class="form-select form-select-sm" style="max-width: 350px;"
+                        onchange="this.form.submit()">
+                    @foreach (var cls in Model.AvailableClasses)
+                    {
+                        <option value="@cls.ClassGroupId"
+                                selected="@(cls.ClassGroupId == Model.SelectedClassGroupId)">
+                            @cls.DisplayName
+                        </option>
+                    }
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-primary">@Model.TotalStudents</div>
+                    <div class="text-muted small">Toplam Öğrenci</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body">
+                    @{
+                        var rankColor = Model.CurrentUserRank <= 3 ? "text-warning" : "text-success";
+                    }
+                    <div class="fs-2 fw-bold @rankColor">
+                        @if (Model.CurrentUserRank == 1) { <i class="bi bi-trophy-fill"></i> }
+                        @Model.CurrentUserRank / @Model.TotalStudents
+                    </div>
+                    <div class="text-muted small">Sıralamanız</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-info">@Model.CurrentUserScore</div>
+                    <div class="text-muted small">Puanınız</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body">
+                    <div class="fs-2 fw-bold text-secondary">@Model.MaxPossibleScore</div>
+                    <div class="text-muted small">Maks. Puan</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+            <h5 class="fw-bold mb-0">
+                <i class="bi bi-list-ol me-2"></i> @Model.SelectedCourseName — @Model.SelectedClassName
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            @if (!Model.Students.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-people" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0">Henüz bu sınıfta öğrenci yok.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4" style="width: 70px;">Sıra</th>
+                                <th>Öğrenci</th>
+                                <th class="text-center" style="width: 140px;">Puan</th>
+                                <th class="text-center" style="width: 120px;">Başarı</th>
+                                <th class="text-center" style="width: 120px;">Ödev</th>
+                                <th style="width: 250px;">İlerleme</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var student in Model.Students)
+                            {
+                                var rowClass = student.IsCurrentUser ? "table-primary" : "";
+                                var rankBadge = student.Rank switch
+                                {
+                                    1 => "<span class='badge rounded-pill fs-6' style='background: linear-gradient(135deg, #FFD700, #FFA500); color: #333;'><i class='bi bi-trophy-fill'></i> 1</span>",
+                                    2 => "<span class='badge rounded-pill fs-6' style='background: linear-gradient(135deg, #C0C0C0, #A8A8A8); color: #333;'><i class='bi bi-trophy-fill'></i> 2</span>",
+                                    3 => "<span class='badge rounded-pill fs-6' style='background: linear-gradient(135deg, #CD7F32, #B8702E); color: #fff;'><i class='bi bi-trophy-fill'></i> 3</span>",
+                                    _ => $"<span class='badge bg-light text-dark rounded-pill fs-6'>{student.Rank}</span>"
+                                };
+
+                                var progressColor = student.SuccessRate >= 80 ? "bg-success" :
+                                                    student.SuccessRate >= 50 ? "bg-warning" : "bg-danger";
+
+                                <tr class="@rowClass">
+                                    <td class="ps-4">@Html.Raw(rankBadge)</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                                 style="width: 36px; height: 36px; background: @(student.IsCurrentUser ? "#0d6efd" : "#6c757d"); font-size: 0.85rem;">
+                                                @student.FullName.Substring(0, 1).ToUpper()
+                                            </div>
+                                            <div>
+                                                <span class="fw-semibold @(student.IsCurrentUser ? "text-primary" : "")">
+                                                    @student.FullName
+                                                    @if (student.IsCurrentUser)
+                                                    {
+                                                        <span class="badge bg-primary ms-1">Sen</span>
+                                                    }
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold">@student.TotalScore</span>
+                                        <span class="text-muted small">/ @student.MaxPossibleScore</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @(student.SuccessRate >= 80 ? "bg-success" : student.SuccessRate >= 50 ? "bg-warning text-dark" : "bg-danger") rounded-pill px-3">
+                                            %@student.SuccessRate
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="text-muted">@student.CompletedAssignments / @student.TotalAssignments</span>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar @progressColor" role="progressbar"
+                                                 style="width: @student.SuccessRate%"
+                                                 aria-valuenow="@student.SuccessRate" aria-valuemin="0" aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+}

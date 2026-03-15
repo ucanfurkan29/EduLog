@@ -1,0 +1,225 @@
+@model EduLog.Web.ViewModels.MyAssignmentsViewModel
+@{
+    ViewData["Title"] = "Ödevlerim";
+    Layout = "~/Views/Shared/_LayoutStudent.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-file-earmark-text me-2"></i> Ödevlerim
+        </h3>
+        <p class="text-muted mb-0">Tüm derslerinizdeki ödevlerin durumunu buradan takip edebilirsiniz.</p>
+    </div>
+</div>
+
+@if (Model.AvailableClasses.Any())
+{
+    <!-- Class Selector -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="get" asp-action="MyAssignments" class="d-flex align-items-center gap-3">
+                <label class="fw-semibold text-nowrap mb-0">
+                    <i class="bi bi-funnel me-1"></i> Sınıf:
+                </label>
+                <select name="classGroupId" class="form-select form-select-sm" style="max-width: 350px;"
+                        onchange="this.form.submit()">
+                    <option value="">Tüm Sınıflar</option>
+                    @foreach (var cls in Model.AvailableClasses)
+                    {
+                        <option value="@cls.ClassGroupId"
+                                selected="@(cls.ClassGroupId == Model.SelectedClassGroupId)">
+                            @cls.DisplayName
+                        </option>
+                    }
+                </select>
+            </form>
+        </div>
+    </div>
+}
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="card-body">
+                <div class="fs-2 fw-bold text-primary">@Model.TotalAssignmentCount</div>
+                <div class="text-muted small">Toplam Ödev</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="card-body">
+                <div class="fs-2 fw-bold text-success">@Model.SubmittedCount</div>
+                <div class="text-muted small">Teslim Edilen</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="card-body">
+                <div class="fs-2 fw-bold text-warning">@Model.PendingCount</div>
+                <div class="text-muted small">Bekleyen</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="card-body">
+                <div class="fs-2 fw-bold text-info">%@Model.OverallSuccessRate</div>
+                <div class="text-muted small">Başarı Oranı</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.ClassGroups.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+            <p class="text-muted mt-3 mb-0">Henüz herhangi bir ödeviniz bulunmuyor.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="accordion" id="assignmentAccordion">
+        @for (int i = 0; i < Model.ClassGroups.Count; i++)
+        {
+            var group = Model.ClassGroups[i];
+            var pendingCount = group.Assignments.Count(a => !a.HasSubmission);
+            var collapseId = $"collapse_{i}";
+            var headerId = $"header_{i}";
+
+            <div class="accordion-item border-0 shadow-sm mb-3 rounded-3 overflow-hidden">
+                <h2 class="accordion-header" id="@headerId">
+                    <button class="accordion-button @(i > 0 ? "collapsed" : "")" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#@collapseId"
+                            aria-expanded="@(i == 0 ? "true" : "false")" aria-controls="@collapseId">
+                        <div class="d-flex align-items-center gap-3 w-100">
+                            <div>
+                                <span class="fw-bold">@group.CourseName</span>
+                                <span class="text-muted ms-2">— @group.ClassName</span>
+                            </div>
+                            <div class="ms-auto me-3 d-flex gap-2">
+                                @if (pendingCount > 0)
+                                {
+                                    <span class="badge bg-warning text-dark">@pendingCount bekleyen</span>
+                                }
+                                <span class="badge bg-primary">@group.Assignments.Count ödev</span>
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+                <div id="@collapseId" class="accordion-collapse collapse @(i == 0 ? "show" : "")"
+                     aria-labelledby="@headerId" data-bs-parent="#assignmentAccordion">
+                    <div class="accordion-body p-0">
+                        <div class="list-group list-group-flush">
+                            @foreach (var assignment in group.Assignments)
+                            {
+                                var isDuePassed = assignment.DueDate.HasValue && assignment.DueDate.Value < DateTime.UtcNow;
+
+                                <div class="list-group-item px-4 py-3 @(!assignment.HasSubmission ? "border-start border-4 border-warning" : "border-start border-4 border-success")">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <h6 class="fw-bold mb-0">@assignment.Title</h6>
+                                                <span class="badge @(assignment.Type == "CodeTask" ? "bg-warning text-dark" : "bg-info")">
+                                                    @(assignment.Type == "CodeTask" ? "Kodlama" : "Çoktan Seçmeli")
+                                                </span>
+                                            </div>
+
+                                            <div class="d-flex flex-wrap gap-3 text-muted small mt-1">
+                                                <span>
+                                                    <i class="bi bi-journal-text me-1"></i>
+                                                    Hafta @assignment.WeekNumber: @assignment.WeekTopic
+                                                </span>
+                                                <span>
+                                                    <i class="bi bi-star me-1"></i>
+                                                    Maks: @assignment.MaxScore puan
+                                                </span>
+                                                @if (assignment.DueDate.HasValue)
+                                                {
+                                                    <span class="@(isDuePassed ? "text-danger fw-semibold" : "")">
+                                                        <i class="bi bi-clock me-1"></i>
+                                                        Son: @assignment.DueDate.Value.ToString("dd.MM.yyyy")
+                                                        @if (isDuePassed)
+                                                        {
+                                                            <span class="badge bg-danger ms-1">Süre doldu</span>
+                                                        }
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex align-items-center gap-2 ms-3">
+                                            @if (assignment.HasSubmission)
+                                            {
+                                                @if (assignment.Score.HasValue)
+                                                {
+                                                    <span class="badge bg-success py-2 px-3">
+                                                        <i class="bi bi-check-circle me-1"></i> @assignment.Score / @assignment.MaxScore
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary py-2 px-3">
+                                                        <i class="bi bi-hourglass-split me-1"></i> Değerlendirme bekleniyor
+                                                    </span>
+                                                }
+
+                                                @if (assignment.Type == "CodeTask")
+                                                {
+                                                    <a asp-controller="Submissions" asp-action="SubmitCode"
+                                                       asp-route-assignmentId="@assignment.Id" asp-route-classGroupId="@assignment.ClassGroupId"
+                                                       class="btn btn-outline-primary btn-sm">
+                                                        <i class="bi bi-eye me-1"></i> Teslimi Gör
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-controller="Submissions" asp-action="SubmitQuiz"
+                                                       asp-route-assignmentId="@assignment.Id" asp-route-classGroupId="@assignment.ClassGroupId"
+                                                       class="btn btn-outline-primary btn-sm">
+                                                        <i class="bi bi-eye me-1"></i> Sonucu Gör
+                                                    </a>
+                                                }
+                                            }
+                                            else if (isDuePassed)
+                                            {
+                                                <span class="badge bg-danger py-2 px-3">
+                                                    <i class="bi bi-clock-history me-1"></i> Süre doldu
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                @if (assignment.Type == "CodeTask")
+                                                {
+                                                    <a asp-controller="Submissions" asp-action="SubmitCode"
+                                                       asp-route-assignmentId="@assignment.Id" asp-route-classGroupId="@assignment.ClassGroupId"
+                                                       class="btn btn-success btn-sm">
+                                                        <i class="bi bi-send me-1"></i> Teslim Et
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a asp-controller="Submissions" asp-action="SubmitQuiz"
+                                                       asp-route-assignmentId="@assignment.Id" asp-route-classGroupId="@assignment.ClassGroupId"
+                                                       class="btn btn-success btn-sm">
+                                                        <i class="bi bi-send me-1"></i> Quiz'e Başla
+                                                    </a>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

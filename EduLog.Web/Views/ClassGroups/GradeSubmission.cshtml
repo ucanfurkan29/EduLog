@@ -32,7 +32,7 @@
                     <div class="d-flex align-items-center gap-2">
                         <select id="aiProvider" class="form-select form-select-sm" style="width: auto;">
                             <option value="anthropic">Claude</option>
-                            <option value="gemini">Gemini</option>
+                            <option value="gemini" selected>Gemini</option>
                         </select>
                         <button type="button" class="btn btn-outline-info btn-sm" id="btnAIReview" onclick="requestAIReview()">
                             <i class="bi bi-robot me-1"></i> AI ile Değerlendir
@@ -40,8 +40,9 @@
                     </div>
                 }
             </div>
-            <div class="card-body p-4">
-                <pre class="bg-dark text-light p-3 rounded" style="font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; max-height: 500px; overflow-y: auto;">@Model.Content</pre>
+            <div class="card-body p-0">
+                <div id="codeViewerContainer"></div>
+                <textarea id="submittedCode" style="display:none;">@Model.Content</textarea>
             </div>
         </div>
     </div>
@@ -64,6 +65,7 @@
                     <input type="hidden" asp-for="MaxScore" />
                     <input type="hidden" asp-for="SubmittedAt" />
                     <input type="hidden" asp-for="AssignmentType" />
+                    <input type="hidden" asp-for="ProgrammingLanguage" />
                     <input type="hidden" asp-for="AssignmentDescription" />
                     <input type="hidden" asp-for="ExpectedBehavior" />
 
@@ -178,9 +180,62 @@
     </div>
 </div>
 
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/monokai.min.css" />
+    <style>
+        .CodeMirror {
+            height: auto;
+            max-height: 500px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+    </style>
+}
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/sql/sql.min.js"></script>
+
     <script>
+        // Initialize CodeMirror read-only viewer
+        (function () {
+            var container = document.getElementById('codeViewerContainer');
+            if (!container) return;
+
+            var langMap = {
+                'csharp': 'text/x-csharp',
+                'python': 'python',
+                'javascript': 'javascript',
+                'java': 'text/x-java',
+                'cpp': 'text/x-c++src',
+                'html': 'htmlmixed',
+                'css': 'css',
+                'sql': 'sql'
+            };
+
+            var lang = '@Model.ProgrammingLanguage';
+            var mode = langMap[lang] || 'text/plain';
+
+            CodeMirror(container, {
+                value: document.getElementById('submittedCode').value,
+                mode: mode,
+                theme: 'monokai',
+                lineNumbers: true,
+                readOnly: true,
+                lineWrapping: true
+            });
+        })();
+
+        // AI Review functionality
         let lastReviewData = null;
 
         function requestAIReview() {

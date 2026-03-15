@@ -102,7 +102,8 @@
                     <h6 class="fw-bold mb-0"><i class="bi bi-file-earmark-code me-2"></i> Teslim Edilen Kod</h6>
                 </div>
                 <div class="card-body p-0">
-                    <pre class="mb-0 p-4" style="background-color: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; overflow-x: auto; border-radius: 0 0 0.375rem 0.375rem; white-space: pre-wrap;">@Model.SubmittedContent</pre>
+                    <div id="codeViewerContainer"></div>
+                    <textarea id="submittedCode" style="display:none;">@Model.SubmittedContent</textarea>
                 </div>
             </div>
         }
@@ -115,3 +116,58 @@
         </div>
     </div>
 </div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/monokai.min.css" />
+    <style>
+        .CodeMirror {
+            height: auto;
+            max-height: 500px;
+            font-size: 14px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            border-radius: 0 0 0.375rem 0.375rem;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/sql/sql.min.js"></script>
+
+    <script>
+        (function () {
+            var container = document.getElementById('codeViewerContainer');
+            if (!container) return;
+
+            var langMap = {
+                'csharp': 'text/x-csharp',
+                'python': 'python',
+                'javascript': 'javascript',
+                'java': 'text/x-java',
+                'cpp': 'text/x-c++src',
+                'html': 'htmlmixed',
+                'css': 'css',
+                'sql': 'sql'
+            };
+
+            var lang = '@Model.ProgrammingLanguage';
+            var mode = langMap[lang] || 'text/plain';
+
+            var viewer = CodeMirror(container, {
+                value: document.getElementById('submittedCode').value,
+                mode: mode,
+                theme: 'monokai',
+                lineNumbers: true,
+                readOnly: true,
+                lineWrapping: true
+            });
+        })();
+    </script>
+}

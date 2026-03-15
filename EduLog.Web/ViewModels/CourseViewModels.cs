@@ -12,6 +12,10 @@ namespace EduLog.Web.ViewModels
         [MaxLength(1000)]
         [Display(Name = "Açıklama")]
         public string Description { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        [Display(Name = "Programlama Dili")]
+        public string ProgrammingLanguage { get; set; } = "csharp";
     }
 
     public class EditCourseViewModel
@@ -26,5 +30,9 @@ namespace EduLog.Web.ViewModels
         [MaxLength(1000)]
         [Display(Name = "Açıklama")]
         public string Description { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        [Display(Name = "Programlama Dili")]
+        public string ProgrammingLanguage { get; set; } = "csharp";
     }
 }

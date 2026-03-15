@@ -11,6 +11,7 @@ namespace EduLog.Web.ViewModels
         public string? ExpectedBehavior { get; set; }
         public string? StarterCode { get; set; }
         public int MaxScore { get; set; }
+        public string ProgrammingLanguage { get; set; } = "csharp";
 
         [Required(ErrorMessage = "Kod içeriği gereklidir.")]
         [Display(Name = "Kodunuz")]
@@ -72,6 +73,7 @@ namespace EduLog.Web.ViewModels
         public DateTime SubmittedAt { get; set; }
         public int ClassGroupId { get; set; }
         public string? SubmittedContent { get; set; }
+        public string ProgrammingLanguage { get; set; } = "csharp";
 
         // AI Review fields
         public string? Summary { get; set; }
@@ -91,6 +93,7 @@ namespace EduLog.Web.ViewModels
         public DateTime SubmittedAt { get; set; }
         public int ClassGroupId { get; set; }
         public string AssignmentType { get; set; } = string.Empty;
+        public string ProgrammingLanguage { get; set; } = "csharp";
         public string? AssignmentDescription { get; set; }
         public string? ExpectedBehavior { get; set; }
 

@@ -219,6 +219,12 @@ namespace EduLog.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Get programming language from the course chain
+            var week = await _context.SyllabusWeeks
+                .Include(w => w.Syllabus).ThenInclude(s => s.Course)
+                .FirstOrDefaultAsync(w => w.Id == submission.Assignment.SyllabusWeekId);
+            var programmingLanguage = week?.Syllabus?.Course?.ProgrammingLanguage ?? "csharp";
+
             var model = new GradeSubmissionViewModel
             {
                 SubmissionId = submission.Id,
@@ -231,6 +237,7 @@ namespace EduLog.Web.Controllers
                 Score = submission.Score ?? 0,
                 InstructorNote = submission.InstructorNote,
                 AssignmentType = submission.Assignment.Type,
+                ProgrammingLanguage = programmingLanguage,
                 AssignmentDescription = submission.Assignment.Description,
                 ExpectedBehavior = submission.Assignment.ExpectedBehavior
             };
@@ -272,10 +279,104 @@ namespace EduLog.Web.Controllers
                     missingParts = review.MissingParts
                 });
             }
+            catch (AIServiceException aiEx)
+            {
+                return Json(new { success = false, error = aiEx.UserFriendlyMessage });
+            }
             catch (Exception ex)
             {
                 return Json(new { success = false, error = $"AI değerlendirme başarısız: {ex.Message}" });
             }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> BulkAIReviewSubmissions(int classGroupId, string provider = "anthropic")
+        {
+            var allSubmissions = await _submissionService.GetByClassGroupIdAsync(classGroupId);
+            var ungradedCodeSubmissions = allSubmissions
+                .Where(s => s.Assignment.Type == "CodeTask" && s.Score == null)
+                .ToList();
+
+            if (!ungradedCodeSubmissions.Any())
+                return Json(new { success = true, message = "Puanlanmamış kod teslimi bulunamadı.", results = Array.Empty<object>() });
+
+            IAIQuestionService aiService = provider == "gemini"
+                ? _geminiService
+                : _anthropicService;
+
+            var results = new List<object>();
+            int successCount = 0;
+            int failCount = 0;
+
+            foreach (var submission in ungradedCodeSubmissions)
+            {
+                try
+                {
+                    var week = await _context.SyllabusWeeks
+                        .Include(w => w.Syllabus).ThenInclude(s => s.Course)
+                        .FirstOrDefaultAsync(w => w.Id == submission.Assignment.SyllabusWeekId);
+
+                    var topic = week?.Topic ?? "Bilinmiyor";
+                    var taskDescription = $"{submission.Assignment.Description ?? submission.Assignment.Title}\nBeklenen Davranış: {submission.Assignment.ExpectedBehavior ?? "Belirtilmemiş"}";
+
+                    var review = await aiService.ReviewCodeSubmissionAsync(
+                        topic, taskDescription, submission.Content, submission.Assignment.MaxScore);
+
+                    var instructorNote = $"🤖 AI Değerlendirmesi:\n{review.Summary}";
+                    if (!string.IsNullOrWhiteSpace(review.MissingParts))
+                    {
+                        instructorNote += $"\n\nEksikler: {review.MissingParts}";
+                    }
+
+                    await _submissionService.GradeAsync(submission.Id, review.SuggestedScore, instructorNote);
+
+                    results.Add(new
+                    {
+                        studentName = submission.User.FullName,
+                        assignmentTitle = submission.Assignment.Title,
+                        score = review.SuggestedScore,
+                        maxScore = submission.Assignment.MaxScore,
+                        success = true,
+                        error = (string?)null
+                    });
+                    successCount++;
+                }
+                catch (AIServiceException aiEx)
+                {
+                    results.Add(new
+                    {
+                        studentName = submission.User.FullName,
+                        assignmentTitle = submission.Assignment.Title,
+                        score = 0,
+                        maxScore = submission.Assignment.MaxScore,
+                        success = false,
+                        error = aiEx.UserFriendlyMessage
+                    });
+                    failCount++;
+                }
+                catch (Exception ex)
+                {
+                    results.Add(new
+                    {
+                        studentName = submission.User.FullName,
+                        assignmentTitle = submission.Assignment.Title,
+                        score = 0,
+                        maxScore = submission.Assignment.MaxScore,
+                        success = false,
+                        error = ex.Message
+                    });
+                    failCount++;
+                }
+            }
+
+            return Json(new
+            {
+                success = true,
+                totalCount = ungradedCodeSubmissions.Count,
+                successCount,
+                failCount,
+                results
+            });
         }
 
         [HttpPost]

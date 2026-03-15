@@ -13,6 +13,9 @@ namespace EduLog.Core.Entities
         [MaxLength(1000)]
         public string Description { get; set; } = string.Empty;
 
+        [MaxLength(50)]
+        public string ProgrammingLanguage { get; set; } = "csharp";
+
         public ICollection<Syllabus> Syllabi { get; set; } = new List<Syllabus>();
         public ICollection<ClassGroup> ClassGroups { get; set; } = new List<ClassGroup>();
     }

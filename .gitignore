@@ -80,5 +80,11 @@ TestResults/
 # dotnet tool manifests
 .config/
 
+# Agent / AI assistant files
+.agent/
+.gemini/
+SKILLS.md
+STARTING_PROMPT.md
+
 # Thumbs
 Thumbs.db

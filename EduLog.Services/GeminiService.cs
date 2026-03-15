@@ -56,9 +56,9 @@ namespace EduLog.Services
                 var questions = JsonSerializer.Deserialize<List<AIGeneratedQuestion>>(cleaned, options);
                 return questions ?? new List<AIGeneratedQuestion>();
             }
-            catch (Exception)
+            catch (JsonException ex)
             {
-                return new List<AIGeneratedQuestion>();
+                throw new AIServiceException(AIErrorType.JsonParseError, null, ex);
             }
         }
 
@@ -74,9 +74,9 @@ namespace EduLog.Services
                 var codeTask = JsonSerializer.Deserialize<AIGeneratedCodeTask>(cleaned, options);
                 return codeTask ?? new AIGeneratedCodeTask();
             }
-            catch (Exception)
+            catch (JsonException ex)
             {
-                return new AIGeneratedCodeTask();
+                throw new AIServiceException(AIErrorType.JsonParseError, null, ex);
             }
         }
 
@@ -92,20 +92,43 @@ namespace EduLog.Services
                 var review = JsonSerializer.Deserialize<AICodeReview>(cleaned, options);
                 return review ?? new AICodeReview();
             }
-            catch (Exception)
+            catch (JsonException ex)
             {
-                return new AICodeReview();
+                throw new AIServiceException(AIErrorType.JsonParseError, null, ex);
             }
         }
 
         private async Task<string> SendGeminiRequestAsync(string prompt)
         {
-            var client = new Client(apiKey: _apiKey);
-            var response = await client.Models.GenerateContentAsync(
-                model: _model,
-                contents: prompt
-            );
-            return response.Candidates?[0]?.Content?.Parts?[0]?.Text ?? "[]";
+            try
+            {
+                var client = new Client(apiKey: _apiKey);
+                var response = await client.Models.GenerateContentAsync(
+                    model: _model,
+                    contents: prompt
+                );
+                return response.Candidates?[0]?.Content?.Parts?[0]?.Text ?? "[]";
+            }
+            catch (TaskCanceledException ex)
+            {
+                throw new AIServiceException(AIErrorType.Timeout, null, ex);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new AIServiceException(AIErrorType.NetworkError, null, ex);
+            }
+            catch (AIServiceException)
+            {
+                throw;
+            }
+            catch (Exception ex) when (ex.Message.Contains("401") || ex.Message.Contains("Unauthorized"))
+            {
+                throw new AIServiceException(AIErrorType.AuthenticationError, null, ex);
+            }
+            catch (Exception ex) when (ex.Message.Contains("429") || ex.Message.Contains("rate", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new AIServiceException(AIErrorType.ApiLimitExceeded, null, ex);
+            }
         }
 
         private static string CleanJsonResponse(string text)
